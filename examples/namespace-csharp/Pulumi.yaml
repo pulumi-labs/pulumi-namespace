@@ -1,0 +1,3 @@
+name: namespace-csharp
+runtime: dotnet
+description: Run an ephemeral container instance and a vault secret on Namespace Cloud with Pulumi (C#)

@@ -1,0 +1,16 @@
+name: ${PROJECT}
+description: ${DESCRIPTION}
+runtime: go
+
+template:
+  description: A Go program to provision a Namespace Cloud vault secret, an ephemeral container instance, and an IAM tenant.
+  config:
+    nscToken:
+      description: Namespace Cloud API token (from `nsc auth generate-dev-token` or a revokable token). Never commit it.
+      secret: true
+    dbPassword:
+      description: Secret value to store in the Namespace vault.
+      secret: true
+    region:
+      description: Namespace compute region for instances (us or eu).
+      default: us

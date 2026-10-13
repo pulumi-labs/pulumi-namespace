@@ -1,0 +1,3 @@
+name: namespace-java
+runtime: java
+description: Run an ephemeral container instance and a vault secret on Namespace Cloud with Pulumi (Java)

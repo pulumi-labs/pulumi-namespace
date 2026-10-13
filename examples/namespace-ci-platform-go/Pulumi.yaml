@@ -1,0 +1,3 @@
+name: namespace-ci-platform-go
+runtime: go
+description: A CI platform on Namespace Cloud (runner profile, egress policy, token, registry policy) with Pulumi (Go)
