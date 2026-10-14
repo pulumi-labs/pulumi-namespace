@@ -28,10 +28,10 @@ import (
 // ProviderConfig holds provider-level configuration shared across all resources.
 type ProviderConfig struct {
 	// Token is the Namespace Cloud bearer token.
-	Token *string `pulumi:"token,optional" provider:"secret" env:"NSC_TOKEN"`
+	Token *string `pulumi:"token,optional" provider:"secret"`
 
 	// Region selects the regional compute endpoint ({region}.compute.namespaceapis.com).
-	Region *string `pulumi:"region,optional" env:"NSC_REGION"`
+	Region *string `pulumi:"region,optional"`
 
 	// ComputeEndpoint overrides the regional compute API base URL.
 	ComputeEndpoint *string `pulumi:"computeEndpoint,optional"`
@@ -43,7 +43,12 @@ type ProviderConfig struct {
 	GlobalEndpoint *string `pulumi:"globalEndpoint,optional"`
 }
 
+// Annotate describes the provider config fields and wires their environment
+// variable fallbacks; infer reads env defaults only from SetDefault, not from
+// struct tags.
 func (c *ProviderConfig) Annotate(a infer.Annotator) {
+	a.SetDefault(&c.Token, nil, "NSC_TOKEN")
+	a.SetDefault(&c.Region, nil, "NSC_REGION")
 	a.Describe(&c.Token, "Namespace Cloud bearer token: a revokable token ('nsc token create'), a development "+
 		"token ('nsc auth generate-dev-token'), or the result of an OIDC token exchange. "+
 		"Falls back to the NSC_TOKEN environment variable.")

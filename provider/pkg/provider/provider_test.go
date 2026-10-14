@@ -3,6 +3,7 @@ package provider
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -556,3 +557,137 @@ func TestGetInstances_PaginatesByCursor(t *testing.T) {
 }
 
 var _ = infer.Config[ProviderConfig]
+
+// ---------------------------------------------------------------------------
+// CheckConfig: environment variable fallbacks
+// ---------------------------------------------------------------------------
+
+// envFallbackKey is one provider config key and the environment variables that
+// back it, in priority order.
+type envFallbackKey struct {
+	key    string
+	envs   []string
+	secret bool
+}
+
+// envFallbackKeys lists every config key that has environment variable fallbacks.
+var envFallbackKeys = []envFallbackKey{
+	{key: "token", envs: []string{"NSC_TOKEN"}, secret: true},
+	{key: "region", envs: []string{"NSC_REGION"}},
+}
+
+// clearFallbackEnv blanks every fallback variable so a case starts hermetic.
+func clearFallbackEnv(t *testing.T) {
+	t.Helper()
+	for _, k := range envFallbackKeys {
+		for _, e := range k.envs {
+			t.Setenv(e, "")
+		}
+	}
+}
+
+// checkConfig runs CheckConfig through the integration server with cfg as the
+// explicit provider config and returns the resulting inputs.
+func checkConfig(t *testing.T, cfg map[string]property.Value) property.Map {
+	t.Helper()
+	p, err := New()
+	require.NoError(t, err)
+	s, err := integration.NewServer(t.Context(), "namespace", semver.MustParse("0.0.1"), integration.WithProvider(p))
+	require.NoError(t, err)
+	resp, err := s.CheckConfig(pgp.CheckRequest{
+		Urn:    resource.NewURN("stack", "proj", "", "pulumi:providers:namespace", "default"),
+		Inputs: property.NewMap(cfg),
+	})
+	require.NoError(t, err)
+	require.Empty(t, resp.Failures)
+	return resp.Inputs
+}
+
+// TestCheckConfig_EnvFallbacks verifies that unset provider config is filled
+// from the environment, that explicit config wins, and that the first
+// non-empty variable wins when a key has several.
+func TestCheckConfig_EnvFallbacks(t *testing.T) {
+	type tc struct {
+		name   string
+		key    string
+		env    map[string]string
+		config map[string]property.Value
+		want   string
+	}
+	var tests []tc
+	for _, k := range envFallbackKeys {
+		for _, e := range k.envs {
+			tests = append(tests, tc{name: k.key + " from " + e, key: k.key, env: map[string]string{e: "from-env"}, want: "from-env"})
+		}
+		tests = append(tests, tc{
+			name:   k.key + " explicit config wins over env",
+			key:    k.key,
+			env:    map[string]string{k.envs[0]: "from-env"},
+			config: map[string]property.Value{k.key: property.New("from-config")},
+			want:   "from-config",
+		})
+		if len(k.envs) > 1 {
+			both := map[string]string{}
+			for i, e := range k.envs {
+				both[e] = fmt.Sprintf("from-env-%d", i)
+			}
+			tests = append(tests, tc{name: k.key + " first env var wins", key: k.key, env: both, want: "from-env-0"})
+		}
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			clearFallbackEnv(t)
+			for e, v := range tt.env {
+				t.Setenv(e, v)
+			}
+			got, ok := checkConfig(t, tt.config).GetOk(tt.key)
+			require.True(t, ok, "%s should be populated", tt.key)
+			if got.Secret() {
+				got = got.WithSecret(false)
+			}
+			require.Equal(t, tt.want, got.AsString())
+		})
+	}
+}
+
+// TestSchema_ConfigEnvironmentDefaults asserts the generated schema declares the
+// environment variables for each config key, which is what the language SDKs
+// and the Pulumi CLI use to resolve the same fallbacks.
+func TestSchema_ConfigEnvironmentDefaults(t *testing.T) {
+	p, err := New()
+	require.NoError(t, err)
+	s, err := integration.NewServer(t.Context(), "namespace", semver.MustParse("0.0.1"), integration.WithProvider(p))
+	require.NoError(t, err)
+	resp, err := s.GetSchema(pgp.GetSchemaRequest{})
+	require.NoError(t, err)
+	var spec struct {
+		Config struct {
+			Variables map[string]struct {
+				DefaultInfo struct {
+					Environment []string `json:"environment"`
+				} `json:"defaultInfo"`
+			} `json:"variables"`
+		} `json:"config"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(resp.Schema), &spec))
+	for _, k := range envFallbackKeys {
+		v, ok := spec.Config.Variables[k.key]
+		require.True(t, ok, "config.variables.%s missing from schema", k.key)
+		require.Equal(t, k.envs, v.DefaultInfo.Environment, "config.variables.%s.defaultInfo.environment", k.key)
+	}
+}
+
+// TestCheckConfig_EnvSecretsStaySecret asserts that credentials sourced from the
+// environment come back marked secret, and non-secret keys do not.
+func TestCheckConfig_EnvSecretsStaySecret(t *testing.T) {
+	clearFallbackEnv(t)
+	for _, k := range envFallbackKeys {
+		t.Setenv(k.envs[0], "from-env")
+	}
+	got := checkConfig(t, nil)
+	for _, k := range envFallbackKeys {
+		v, ok := got.GetOk(k.key)
+		require.True(t, ok, "%s should be populated", k.key)
+		require.Equal(t, k.secret, v.Secret(), "%s secret marking", k.key)
+	}
+}

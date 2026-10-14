@@ -42,7 +42,15 @@ The provider needs a Namespace bearer token. Any of these work:
 export NSC_TOKEN=...
 
 # Or Pulumi config, stored as a secret
-pulumi config set --secret namespace:token ...
+pulumi config set namespace:token <token> --secret
+```
+
+The region works the same way, and explicit Pulumi config wins over the environment variable:
+
+```bash
+export NSC_REGION=eu
+# Or
+pulumi config set namespace:region eu
 ```
 
 ## Configuration
