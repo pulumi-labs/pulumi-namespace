@@ -3,21 +3,10 @@ package main
 import (
 	"github.com/pulumi/pulumi-namespace/sdk/go/namespace"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
-	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
 
 func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
-		cfg := config.New(ctx, "")
-		provider, err := namespace.NewProvider(ctx, "namespace", &namespace.ProviderArgs{
-			Token:  cfg.RequireSecret("nscToken"),
-			Region: pulumi.String("us"),
-		})
-		if err != nil {
-			return err
-		}
-		opt := pulumi.Provider(provider)
-
 		// Block all egress from CI jobs except what the rules allow.
 		egress, err := namespace.NewEgressPolicy(ctx, "ci-egress", &namespace.EgressPolicyArgs{
 			Tag:         pulumi.String("ci-locked-down"),
@@ -33,7 +22,7 @@ func main() {
 					},
 				},
 			}},
-		}, opt)
+		})
 		if err != nil {
 			return err
 		}
@@ -49,7 +38,7 @@ func main() {
 				Egress:          pulumi.String("EGRESS_POLICY_TAG"),
 				EgressPolicyTag: egress.Tag,
 			},
-		}, opt)
+		})
 		if err != nil {
 			return err
 		}
@@ -57,7 +46,7 @@ func main() {
 		// A tenant group and a revokable token whose bearer value is a secret output.
 		group, err := namespace.NewTenantGroup(ctx, "ci-tenants", &namespace.TenantGroupArgs{
 			Name: pulumi.String("ci-tenants"),
-		}, opt)
+		})
 		if err != nil {
 			return err
 		}
@@ -69,7 +58,7 @@ func main() {
 				ResourceId:   pulumi.String("*"),
 				Actions:      pulumi.StringArray{pulumi.String("read")},
 			}},
-		}, opt)
+		})
 		if err != nil {
 			return err
 		}
@@ -79,12 +68,12 @@ func main() {
 			Repository:            pulumi.String("ci/runner"),
 			ExpirationSeconds:     pulumi.Int(14 * 24 * 3600),
 			ExpirationEnforcement: pulumi.String("EXPIRATION_ENFORCEMENT_ENFORCE"),
-		}, opt)
+		})
 		if err != nil {
 			return err
 		}
 
-		repos := namespace.GetRegistryRepositoriesOutput(ctx, namespace.GetRegistryRepositoriesOutputArgs{}, pulumi.Provider(provider))
+		repos := namespace.GetRegistryRepositoriesOutput(ctx, namespace.GetRegistryRepositoriesOutputArgs{})
 
 		ctx.Export("profileId", profile.ProfileId)
 		ctx.Export("groupName", group.Name)

@@ -45,7 +45,7 @@ export NSC_TOKEN=...
 pulumi config set namespace:token <token> --secret
 ```
 
-The region works the same way, and explicit Pulumi config wins over the environment variable:
+The default provider reads this configuration, so resources need no `provider` option. An explicit `namespace` provider resource is only needed to target several accounts or regions in one program. The region works the same way, and explicit Pulumi config wins over the environment variable:
 
 ```bash
 export NSC_REGION=eu
@@ -153,11 +153,11 @@ A custom base image blueprint built from either `dockerfileContent` or an apt-ba
 ## Example
 
 ```yaml
+# Configure the default provider with:
+#   pulumi config set --secret namespace:token <token>
+#   pulumi config set namespace:region us   # optional
+# or the environment variables NSC_TOKEN and NSC_REGION.
 resources:
-  namespace:
-    type: pulumi:providers:namespace
-    properties:
-      token: ${nscToken}
   sandbox:
     type: namespace:index:Instance
     properties:
@@ -167,8 +167,6 @@ resources:
           imageRef: nginx:1.27
           exportPorts:
             - { name: http, containerPort: 80, proto: HTTP }
-    options:
-      provider: ${namespace}
 ```
 
 Complete programs in all six languages are in [`examples/`](./examples) (`namespace-*` for the basics, `namespace-ci-platform-*` for a runner profile, egress policy, tenant group, secret-output token, registry policy and a data source), and `pulumi new namespace-cloud-<language>` scaffolds one.

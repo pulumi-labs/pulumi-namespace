@@ -1,18 +1,10 @@
+# Provider configuration: this example uses the default provider. Set namespace:token (secret), namespace:region with
+# `pulumi config set [--secret] <key> <value>`, or export NSC_TOKEN, NSC_REGION.
 name: namespace-ci-platform-yaml
 runtime: yaml
 description: A CI platform on Namespace Cloud (runner profile, egress policy, token, registry policy) with Pulumi (YAML)
 
-config:
-  nscToken:
-    type: string
-    secret: true
-
 resources:
-  namespace:
-    type: pulumi:providers:namespace
-    properties:
-      token: ${nscToken}
-      region: us
   ci-egress:
     type: namespace:index:EgressPolicy
     properties:
@@ -23,8 +15,6 @@ resources:
         - op: ALLOW
           matcher:
             matchDomains: [github.com, "*.githubusercontent.com", registry.npmjs.org]
-    options:
-      provider: ${namespace}
   ci-runner:
     type: namespace:index:GithubProfile
     properties:
@@ -35,14 +25,10 @@ resources:
       networkPolicy:
         egress: EGRESS_POLICY_TAG
         egressPolicyTag: ${ci-egress.tag}
-    options:
-      provider: ${namespace}
   ci-tenants:
     type: namespace:index:TenantGroup
     properties:
       name: ci-tenants
-    options:
-      provider: ${namespace}
   ci-token:
     type: namespace:index:RevokableToken
     properties:
@@ -52,24 +38,18 @@ resources:
         - resourceType: instance
           resourceId: "*"
           actions: [read]
-    options:
-      provider: ${namespace}
   ci-images:
     type: namespace:index:RegistryRepositoryPolicy
     properties:
       repository: ci/runner
       expirationSeconds: 1209600
       expirationEnforcement: EXPIRATION_ENFORCEMENT_ENFORCE
-    options:
-      provider: ${namespace}
 
 variables:
   repos:
     fn::invoke:
       function: namespace:index:getRegistryRepositories
       return: repositories
-      options:
-        provider: ${namespace}
 
 outputs:
   profileId: ${ci-runner.profileId}

@@ -1,24 +1,15 @@
+# Provider configuration: this example uses the default provider. Set namespace:token (secret), namespace:region with
+# `pulumi config set [--secret] <key> <value>`, or export NSC_TOKEN, NSC_REGION.
 name: namespace-yaml
 runtime: yaml
 description: Run an ephemeral container instance and a vault secret on Namespace Cloud with Pulumi (YAML)
 
 config:
-  nscToken:
-    type: string
-    secret: true
   dbPassword:
     type: string
     secret: true
 
 resources:
-  # Explicit provider so the token comes from stack config (a secret), not a
-  # hardcoded value. NSC_TOKEN in the environment works too.
-  namespace:
-    type: pulumi:providers:namespace
-    properties:
-      token: ${nscToken}
-      region: us
-
   # A versioned secret in the Namespace vault. Only value updates in place.
   db-password:
     type: namespace:index:VaultObject
@@ -28,8 +19,6 @@ resources:
       revealable: false
       labels:
         team: platform
-    options:
-      provider: ${namespace}
 
   # An ephemeral container instance. Instances are destroyed at their
   # deadline, so treat them as disposable compute for CI jobs, agents, and
@@ -50,8 +39,6 @@ resources:
             - name: http
               containerPort: 80
               proto: HTTP
-    options:
-      provider: ${namespace}
 
   # An IAM tenant: an isolated account with its own policies.
   customer-a:
@@ -60,8 +47,6 @@ resources:
       visibleName: Customer A
       labels:
         tier: free
-    options:
-      provider: ${namespace}
 
 outputs:
   secretVersion: ${db-password.version}
