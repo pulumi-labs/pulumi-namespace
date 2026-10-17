@@ -6,6 +6,10 @@
 
 - Provider config environment variable fallbacks now work: `namespace:token` and `namespace:region` are filled from `NSC_TOKEN` and `NSC_REGION` when unset. The fallbacks were previously declared as struct tags, which the provider framework ignores.
 
+### Changed
+
+- Updated the generated Namespace Cloud protobuf bindings (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) to the 2026-10-13 build (`v1.36.12-20261013172442-9c3b8c311e6d.2`). No resource or schema changes.
+
 ## v0.2.0
 
 ### Added

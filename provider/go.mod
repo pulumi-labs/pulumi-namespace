@@ -3,7 +3,7 @@ module github.com/pulumi/autoregistry/lib/providers/namespace/provider
 go 1.26.0
 
 require (
-	buf.build/gen/go/namespace/cloud/protocolbuffers/go v1.36.12-20261009123829-50a92354c134.2
+	buf.build/gen/go/namespace/cloud/protocolbuffers/go v1.36.12-20261013172442-9c3b8c311e6d.2
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/pulumi/pulumi-go-provider v1.3.1
 	github.com/pulumi/pulumi/pkg/v3 v3.226.0

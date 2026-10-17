@@ -1,5 +1,5 @@
-buf.build/gen/go/namespace/cloud/protocolbuffers/go v1.36.12-20261009123829-50a92354c134.2 h1:SwIv32Jokn73BH3orfUqrcvqRT6ULCh+jD+6TR4Duks=
-buf.build/gen/go/namespace/cloud/protocolbuffers/go v1.36.12-20261009123829-50a92354c134.2/go.mod h1:IB5EzvWVDyFTQd7OUERXKlL+1pRhA4tfF7M6s7/z2WU=
+buf.build/gen/go/namespace/cloud/protocolbuffers/go v1.36.12-20261013172442-9c3b8c311e6d.2 h1:loF+HJwlzM2kP3WoHTQsaDQufqY+YdqPmNYUQcc9DeI=
+buf.build/gen/go/namespace/cloud/protocolbuffers/go v1.36.12-20261013172442-9c3b8c311e6d.2/go.mod h1:IB5EzvWVDyFTQd7OUERXKlL+1pRhA4tfF7M6s7/z2WU=
 dario.cat/mergo v1.0.0 h1:AGCNq9Evsj31mOgNPcLyXc+4PNABt905YmuqPYYpBWk=
 dario.cat/mergo v1.0.0/go.mod h1:uNxQE+84aUszobStD9th8a29P2fMDhsBdgRYvZOxGmk=
 github.com/HdrHistogram/hdrhistogram-go v1.1.2 h1:5IcZpTvzydCQeHzK4Ef/D5rrSqwxob0t8PQPMybUNFM=
