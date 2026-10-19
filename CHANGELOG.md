@@ -8,6 +8,7 @@
 
 ### Changed
 
+- All 6 `namespace-cloud-<lang>` templates now use the default provider (no explicit `Provider` resource, no `nscToken` or `region` stack config), so credentials and region come from `pulumi config set namespace:token --secret`, `namespace:region`, `NSC_TOKEN` or `NSC_REGION`.
 - Updated the generated Namespace Cloud protobuf bindings (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) to the 2026-10-13 build (`v1.36.12-20261013172442-9c3b8c311e6d.2`). No resource or schema changes.
 
 ## v0.2.0

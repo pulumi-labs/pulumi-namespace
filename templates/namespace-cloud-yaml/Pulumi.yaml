@@ -5,36 +5,16 @@ runtime: yaml
 template:
   description: A YAML program to provision a Namespace Cloud vault secret, an ephemeral container instance, and an IAM tenant.
   config:
-    nscToken:
-      description: Namespace Cloud API token (from `nsc auth generate-dev-token` or a revokable token). Never commit it.
-      secret: true
     dbPassword:
       description: Secret value to store in the Namespace vault.
       secret: true
-    region:
-      description: Namespace compute region for instances (us or eu).
-      default: us
 
 config:
-  nscToken:
-    type: string
-    secret: true
   dbPassword:
     type: string
     secret: true
-  region:
-    type: string
-    default: us
 
 resources:
-  # Explicit provider so the token comes from stack config (a secret), not a
-  # hardcoded value. NSC_TOKEN in the environment works too.
-  namespace:
-    type: pulumi:providers:namespace
-    properties:
-      token: ${nscToken}
-      region: ${region}
-
   # A versioned secret in the Namespace vault. Only value updates in place.
   db-password:
     type: namespace:index:VaultObject
@@ -44,8 +24,6 @@ resources:
       revealable: false
       labels:
         team: platform
-    options:
-      provider: ${namespace}
 
   # An ephemeral container instance. Instances are destroyed at their
   # deadline, so treat them as disposable compute for CI jobs, agents, and
@@ -66,8 +44,6 @@ resources:
             - name: http
               containerPort: 80
               proto: HTTP
-    options:
-      provider: ${namespace}
 
   # An IAM tenant: an isolated account with its own policies.
   customer-a:
@@ -76,8 +52,6 @@ resources:
       visibleName: Customer A
       labels:
         tier: free
-    options:
-      provider: ${namespace}
 
 outputs:
   secretVersion: ${db-password.version}

@@ -2,12 +2,6 @@ import pulumi
 import pulumi_namespace as namespace
 
 config = pulumi.Config()
-nsc_token = config.require_secret("nscToken")
-
-# Explicit provider so the token comes from stack config (a secret), not a
-# hardcoded value. NSC_TOKEN in the environment works too.
-provider = namespace.Provider("namespace", token=nsc_token, region=config.get("region") or "us")
-opts = pulumi.ResourceOptions(provider=provider)
 
 # A versioned secret in the Namespace vault. Only `value` updates in place.
 db_password = namespace.VaultObject(
@@ -16,7 +10,6 @@ db_password = namespace.VaultObject(
     description="Database password for the build cache",
     revealable=False,
     labels={"team": "platform"},
-    opts=opts,
 )
 
 # An ephemeral container instance. Instances are destroyed at their deadline,
@@ -36,7 +29,6 @@ sandbox = namespace.Instance(
             ],
         )
     ],
-    opts=opts,
 )
 
 # An IAM tenant: an isolated account with its own policies.
@@ -44,7 +36,6 @@ tenant = namespace.Tenant(
     "customer-a",
     visible_name="Customer A",
     labels={"tier": "free"},
-    opts=opts,
 )
 
 pulumi.export("secret_version", db_password.version)

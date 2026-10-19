@@ -10,23 +10,13 @@ func main() {
 	pulumi.Run(func(ctx *pulumi.Context) error {
 		cfg := config.New(ctx, "")
 
-		// Explicit provider so the token comes from stack config (a secret),
-		// not a hardcoded value. NSC_TOKEN in the environment works too.
-		provider, err := namespace.NewProvider(ctx, "namespace", &namespace.ProviderArgs{
-			Token:  cfg.RequireSecret("nscToken"),
-			Region: pulumi.String(cfg.Get("region")),
-		})
-		if err != nil {
-			return err
-		}
-
 		// A versioned secret in the Namespace vault. Only `value` updates in place.
 		dbPassword, err := namespace.NewVaultObject(ctx, "db-password", &namespace.VaultObjectArgs{
 			Value:       cfg.RequireSecret("dbPassword"),
 			Description: pulumi.String("Database password for the build cache"),
 			Revealable:  pulumi.Bool(false),
 			Labels:      pulumi.StringMap{"team": pulumi.String("platform")},
-		}, pulumi.Provider(provider))
+		})
 		if err != nil {
 			return err
 		}
@@ -55,7 +45,7 @@ func main() {
 					},
 				},
 			},
-		}, pulumi.Provider(provider))
+		})
 		if err != nil {
 			return err
 		}
@@ -64,7 +54,7 @@ func main() {
 		tenant, err := namespace.NewTenant(ctx, "customer-a", &namespace.TenantArgs{
 			VisibleName: pulumi.String("Customer A"),
 			Labels:      pulumi.StringMap{"tier": pulumi.String("free")},
-		}, pulumi.Provider(provider))
+		})
 		if err != nil {
 			return err
 		}

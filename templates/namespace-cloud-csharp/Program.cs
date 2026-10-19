@@ -6,16 +6,6 @@ using System.Collections.Generic;
 return await Deployment.RunAsync(() =>
 {
     var config = new Pulumi.Config();
-    var nscToken = config.RequireSecret("nscToken");
-
-    // Explicit provider so the token comes from stack config (a secret), not a
-    // hardcoded value. NSC_TOKEN in the environment works too.
-    var provider = new Provider("namespace", new ProviderArgs
-    {
-        Token = nscToken,
-        Region = config.Get("region") ?? "us",
-    });
-    var opts = new CustomResourceOptions { Provider = provider };
 
     // A versioned secret in the Namespace vault. Only `value` updates in place.
     var dbPassword = new VaultObject("db-password", new VaultObjectArgs
@@ -24,7 +14,7 @@ return await Deployment.RunAsync(() =>
         Description = "Database password for the build cache",
         Revealable = false,
         Labels = { { "team", "platform" } },
-    }, opts);
+    });
 
     // An ephemeral container instance. Instances are destroyed at their
     // deadline, so treat them as disposable compute for CI jobs, agents, and
@@ -51,14 +41,14 @@ return await Deployment.RunAsync(() =>
                 },
             },
         },
-    }, opts);
+    });
 
     // An IAM tenant: an isolated account with its own policies.
     var tenant = new Tenant("customer-a", new TenantArgs
     {
         VisibleName = "Customer A",
         Labels = { { "tier", "free" } },
-    }, opts);
+    });
 
     return new Dictionary<string, object?>
     {
