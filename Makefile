@@ -16,17 +16,18 @@ GO              ?= go
 
 all: build
 
+## (go.mod lives at the provider root, next to this Makefile; sources stay in provider/)
 ## tidy: resolve Go modules (run first on a fresh checkout)
 tidy:
-	cd $(PROVIDER_DIR) && $(GO) mod tidy
+	$(GO) mod tidy
 
 ## build: compile the provider binary into ./bin/
 build:
 	mkdir -p bin
-	cd $(PROVIDER_DIR) && $(GO) build \
+	$(GO) build \
 		-ldflags "-X $(VERSION_PKG).Version=$(VERSION)" \
-		-o ../bin/$(BINARY) \
-		./cmd/pulumi-resource-$(PROVIDER)
+		-o bin/$(BINARY) \
+		./$(PROVIDER_DIR)/cmd/pulumi-resource-$(PROVIDER)
 
 ## install: install the binary into the Pulumi plugin directory
 install: build
@@ -43,7 +44,7 @@ gen-sdk: install
 
 ## test: run Go unit tests
 test:
-	cd $(PROVIDER_DIR) && $(GO) test ./... -v -count=1 -timeout 10m -parallel $(TESTPARALLELISM)
+	$(GO) test ./... -v -count=1 -timeout 10m -parallel $(TESTPARALLELISM)
 
 ## fmt: format Go source files
 fmt:
@@ -51,7 +52,7 @@ fmt:
 
 ## lint: vet Go source files
 lint:
-	cd $(PROVIDER_DIR) && $(GO) vet ./...
+	$(GO) vet ./...
 
 ## clean: remove build artifacts
 clean:

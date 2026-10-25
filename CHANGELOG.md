@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `go.mod`/`go.sum` moved from `provider/` to the provider's top level (module path is now `github.com/pulumi/autoregistry/lib/providers/namespace`); the Makefile builds from there. No change to the provider binary, schema or SDKs.
+
 ### Fixed
 
 - Provider config environment variable fallbacks now work: `namespace:token` and `namespace:region` are filled from `NSC_TOKEN` and `NSC_REGION` when unset. The fallbacks were previously declared as struct tags, which the provider framework ignores.

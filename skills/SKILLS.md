@@ -63,7 +63,7 @@ Provider config `token` or `NSC_TOKEN`. Accepted tokens: revokable (`nsc token c
 
 ## Tracking Upstream Changes
 
-The module version string encodes the Buf Schema Registry commit timestamp (`v1.36.12-<yyyymmddhhmmss>-<commit>.N`). To check for drift, run `GOPROXY=https://buf.build/gen/go,https://proxy.golang.org go list -m -versions buf.build/gen/go/namespace/cloud/protocolbuffers/go` and compare with `provider/go.mod`. Bump, rebuild, and let the schema tests and compile errors point at renamed or removed fields. Because there is no Terraform provider, bridging is not an option; new RPCs must be added by hand.
+The module version string encodes the Buf Schema Registry commit timestamp (`v1.36.12-<yyyymmddhhmmss>-<commit>.N`). To check for drift, run `GOPROXY=https://buf.build/gen/go,https://proxy.golang.org go list -m -versions buf.build/gen/go/namespace/cloud/protocolbuffers/go` and compare with `go.mod`. Bump, rebuild, and let the schema tests and compile errors point at renamed or removed fields. Because there is no Terraform provider, bridging is not an option; new RPCs must be added by hand.
 
 ## Test Coverage
 
