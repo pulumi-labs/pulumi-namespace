@@ -13,7 +13,11 @@
 ### Changed
 
 - All 6 `namespace-cloud-<lang>` templates now use the default provider (no explicit `Provider` resource, no `nscToken` or `region` stack config), so credentials and region come from `pulumi config set namespace:token --secret`, `namespace:region`, `NSC_TOKEN` or `NSC_REGION`.
-- Updated the generated Namespace Cloud protobuf bindings (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) to the 2026-10-13 build (`v1.36.12-20261013172442-9c3b8c311e6d.2`). No resource or schema changes.
+- Updated the generated Namespace Cloud protobuf bindings (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) to the 2026-10-30 build (`v1.36.12-20261030150547-dbdea2e9de60.2`). Upstream removed `CacheVolumeSettings.volume_tag` from the GitHub runner profile API; see Deprecated below. Other upstream additions (ingress deletion, devbox usage limits) are not exposed by this provider yet.
+
+### Deprecated
+
+- `GithubProfile` `cacheVolumeSettings[].volumeTag` is now optional, deprecated and ignored: the Namespace API no longer accepts a cache volume tag, so the provider no longer sends it and no longer requires it. Existing programs that set it keep working; remove it at your convenience.
 
 ## v0.2.0
 

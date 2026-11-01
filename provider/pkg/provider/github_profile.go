@@ -35,7 +35,10 @@ func (s *ProfileInstanceShape) Annotate(a infer.Annotator) {
 
 // ProfileCacheVolume configures one cache volume attached to runners.
 type ProfileCacheVolume struct {
-	VolumeTag                 string   `pulumi:"volumeTag" json:"volumeTag"`
+	// VolumeTag is deprecated: the Namespace API no longer accepts a volume tag,
+	// so it is never sent. It stays an optional input so existing programs keep
+	// working, and is round-tripped through state from the declared inputs.
+	VolumeTag                 *string  `pulumi:"volumeTag,optional" json:"-"`
 	VolumeSizeGb              *int     `pulumi:"volumeSizeGb,optional" json:"volumeSizeGb,omitempty"`
 	VolumeReservedSizeGb      *int     `pulumi:"volumeReservedSizeGb,optional" json:"volumeReservedSizeGb,omitempty"`
 	BundledContainerCache     *bool    `pulumi:"bundledContainerCache,optional" json:"bundledContainerCache,omitempty"`
@@ -47,7 +50,8 @@ type ProfileCacheVolume struct {
 }
 
 func (v *ProfileCacheVolume) Annotate(a infer.Annotator) {
-	a.Describe(&v.VolumeTag, "Tag identifying the cache volume.")
+	a.Describe(&v.VolumeTag, "Deprecated and ignored: the Namespace API no longer accepts a cache volume tag.")
+	a.Deprecate(&v.VolumeTag, "The Namespace API removed the cache volume tag; this value is ignored and no longer sent.")
 	a.Describe(&v.VolumeSizeGb, "Size of the cache volume in GB.")
 	a.Describe(&v.VolumeReservedSizeGb, "Reserved (pre-provisioned) size of the cache volume in GB.")
 	a.Describe(&v.BundledContainerCache, "Bundle a container image cache into the volume.")
@@ -184,11 +188,6 @@ func (a GithubProfileArgs) validate() []pgp.CheckFailure {
 	}
 	f = append(f, optIn("builderMode", a.BuilderMode, builderModes...)...)
 	f = append(f, optIn("accessLevel", a.AccessLevel, accessLevels...)...)
-	for i, v := range a.CacheVolumeSettings {
-		if v.VolumeTag == "" {
-			f = append(f, fail(fmt.Sprintf("cacheVolumeSettings[%d].volumeTag", i), "must not be empty"))
-		}
-	}
 	if s := a.CustomRunnerImageSpec; s != nil && s.UbuntuSpec != nil && s.DockerSpec != nil {
 		f = append(f, fail("customRunnerImageSpec", "set at most one of ubuntuSpec and dockerSpec"))
 	}
@@ -236,6 +235,13 @@ func applyProfile(state *GithubProfileState, p *githubv1.RunnerProfileWithStatus
 	}
 	if declared != nil {
 		keepDeclared(*declared, &srv)
+		// volumeTag is not part of the API any more, so carry the declared
+		// value into state to avoid a perpetual diff.
+		for i := range srv.CacheVolumeSettings {
+			if i < len(declared.CacheVolumeSettings) {
+				srv.CacheVolumeSettings[i].VolumeTag = declared.CacheVolumeSettings[i].VolumeTag
+			}
+		}
 		srv.RebuildTrigger = declared.RebuildTrigger
 	}
 	state.GithubProfileArgs = srv
