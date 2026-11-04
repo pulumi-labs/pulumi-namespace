@@ -21,8 +21,8 @@ import (
 	"context"
 	"os"
 
-	"github.com/pulumi/autoregistry/lib/providers/namespace/provider/pkg/provider"
-	"github.com/pulumi/autoregistry/lib/providers/namespace/provider/pkg/version"
+	"github.com/pulumi-labs/pulumi-namespace/provider/pkg/provider"
+	"github.com/pulumi-labs/pulumi-namespace/provider/pkg/version"
 	pgp "github.com/pulumi/pulumi-go-provider"
 )
 

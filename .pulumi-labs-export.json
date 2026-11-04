@@ -1,0 +1,11 @@
+{
+  "archetype_repo": "pulumi-labs/pulumi-nvidia-aicr",
+  "archetype_sha": "1d262e3db83fd120e8454b9162e762eaf743de8d",
+  "display_name": "Namespace Cloud",
+  "exclude_platforms": [],
+  "provider": "namespace",
+  "skill_commit": "9394cf6cda3e3b0b903a695ddf93524f8b3c4993",
+  "source_repo": "pulumi/autoregistry",
+  "source_sha": "aa8a9e81a72ab57bf5039c70b7f01fb2230b1bed",
+  "source_version": "0.2.0"
+}

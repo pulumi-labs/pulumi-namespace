@@ -1,0 +1,21 @@
+[project]
+  name = "pulumi_labs_namespace"
+  description = "Experimental: manage Namespace Cloud (namespace.so) resources: ephemeral compute instances, vault secrets, IAM tenants and tokens, GitHub runner profiles, egress policy and registry policy, as infrastructure with Pulumi."
+  dependencies = ["parver>=0.2.1", "pulumi>=3.231.0,<4.0.0", "semver>=2.8.1", "typing-extensions>=4.11,<5; python_version < \"3.11\""]
+  keywords = ["pulumi", "namespace", "namespace-cloud", "ci", "sandbox", "ephemeral-compute", "category/cloud"]
+  readme = "pulumi_labs_namespace/README.md"
+  requires-python = ">=3.9"
+  version = "0.0.1+dev"
+  license = "Apache-2.0"
+  [project.urls]
+    Homepage = "https://namespace.so"
+    Repository = "https://github.com/pulumi-labs/pulumi-namespace"
+
+[build-system]
+  requires = ["setuptools>=61.0"]
+  build-backend = "setuptools.build_meta"
+
+[tool]
+  [tool.setuptools]
+    [tool.setuptools.package-data]
+      pulumi_labs_namespace = ["py.typed", "pulumi-plugin.json"]

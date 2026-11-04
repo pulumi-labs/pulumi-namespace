@@ -1,4 +1,4 @@
-module github.com/pulumi/autoregistry/lib/providers/namespace
+module github.com/pulumi-labs/pulumi-namespace
 
 go 1.26.0
 
