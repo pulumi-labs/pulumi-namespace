@@ -386,3 +386,141 @@ func (r *BuildkiteQueue) Delete(
 	}
 	return infer.DeleteResponse{}, nil
 }
+
+// ---- getBuildkiteQueue / getBuildkiteQueues ----
+
+// BuildkiteQueueInfo is a Buildkite queue's Namespace settings as the API reports them.
+type BuildkiteQueueInfo struct {
+	QueueID               string            `pulumi:"queueId"`
+	QueueName             string            `pulumi:"queueName"`
+	Cluster               string            `pulumi:"cluster"`
+	OrganizationSlug      string            `pulumi:"organizationSlug"`
+	EgressPolicyTag       *string           `pulumi:"egressPolicyTag,optional"`
+	Permissions           *QueuePermissions `pulumi:"permissions,optional"`
+	OpenTelemetrySettings *QueueOtel        `pulumi:"openTelemetrySettings,optional"`
+}
+
+func (q *BuildkiteQueueInfo) Annotate(ann infer.Annotator) {
+	ann.Describe(&q.QueueID, "The Namespace queue identifier.")
+	ann.Describe(&q.QueueName, "The Buildkite queue name.")
+	ann.Describe(&q.Cluster, "The Buildkite cluster the queue belongs to.")
+	ann.Describe(&q.OrganizationSlug, "The Buildkite organization slug.")
+	ann.Describe(&q.EgressPolicyTag, "Tag of the egress policy applied to jobs of the queue.")
+	ann.Describe(&q.Permissions, "Workload permissions of the queue.")
+	ann.Describe(&q.OpenTelemetrySettings, "OpenTelemetry export settings. Header values may be redacted by the API.")
+}
+
+func queueInfo(q *buildkitev1.BuildkiteQueue) (BuildkiteQueueInfo, error) {
+	var st BuildkiteQueueState
+	if err := applyQueue(&st, q, nil); err != nil {
+		return BuildkiteQueueInfo{}, err
+	}
+	return BuildkiteQueueInfo{
+		QueueID: st.QueueID, QueueName: st.QueueName, Cluster: st.Cluster, OrganizationSlug: st.OrganizationSlug,
+		EgressPolicyTag: st.EgressPolicyTag, Permissions: st.Permissions, OpenTelemetrySettings: st.OpenTelemetrySettings,
+	}, nil
+}
+
+func listQueues(ctx context.Context, c *nsClient) ([]*buildkitev1.BuildkiteQueue, error) {
+	var res buildkitev1.ListQueuesResponse
+	if err := c.call(ctx, c.endpoints.globalURL(), buildkiteQueueService, "ListQueues", &buildkitev1.ListQueuesRequest{}, &res); err != nil {
+		return nil, err
+	}
+	return res.GetQueues(), nil
+}
+
+// GetBuildkiteQueue reads one Buildkite queue.
+type GetBuildkiteQueue struct{}
+
+type GetBuildkiteQueueArgs struct {
+	QueueID   *string `pulumi:"queueId,optional"`
+	QueueName *string `pulumi:"queueName,optional"`
+}
+
+func (f *GetBuildkiteQueue) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads the Namespace settings of one Buildkite queue, by queue ID or queue name.")
+}
+
+func (a *GetBuildkiteQueueArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.QueueID, "The Namespace queue ID. Set exactly one of queueId and queueName.")
+	ann.Describe(&a.QueueName, "The Buildkite queue name. Set exactly one of queueId and queueName.")
+}
+
+func (f *GetBuildkiteQueue) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetBuildkiteQueueArgs],
+) (infer.FunctionResponse[BuildkiteQueueInfo], error) {
+	type resp = infer.FunctionResponse[BuildkiteQueueInfo]
+	id, name := derefStr(req.Input.QueueID), derefStr(req.Input.QueueName)
+	if (id == "") == (name == "") {
+		return resp{}, errExactlyOne("getBuildkiteQueue", "queueId", "queueName")
+	}
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	var found *buildkitev1.BuildkiteQueue
+	if id != "" {
+		var res buildkitev1.QueueResponse
+		err := c.call(ctx, c.endpoints.globalURL(), buildkiteQueueService, "GetQueue", &buildkitev1.GetQueueRequest{QueueId: id}, &res)
+		if err != nil && !isNotFound(err) {
+			return resp{}, fmt.Errorf("read buildkite queue %q: %w", id, err)
+		}
+		found = res.GetQueue()
+	} else {
+		qs, err := listQueues(ctx, c)
+		if err != nil {
+			return resp{}, fmt.Errorf("list buildkite queues: %w", err)
+		}
+		for _, q := range qs {
+			if q.GetQueueName() == name {
+				found = q
+				break
+			}
+		}
+	}
+	if found == nil {
+		return resp{}, errLookupNotFound("buildkite queue", id+name)
+	}
+	info, err := queueInfo(found)
+	return resp{Output: info}, err
+}
+
+// GetBuildkiteQueues lists Buildkite queues.
+type GetBuildkiteQueues struct{}
+
+type GetBuildkiteQueuesArgs struct{}
+
+type GetBuildkiteQueuesResult struct {
+	Queues []BuildkiteQueueInfo `pulumi:"queues"`
+}
+
+func (f *GetBuildkiteQueues) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Lists the Buildkite queues connected to Namespace, with their Namespace settings.")
+}
+
+func (r *GetBuildkiteQueuesResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Queues, "The Buildkite queues.")
+}
+
+func (f *GetBuildkiteQueues) Invoke(
+	ctx context.Context, _ infer.FunctionRequest[GetBuildkiteQueuesArgs],
+) (infer.FunctionResponse[GetBuildkiteQueuesResult], error) {
+	type resp = infer.FunctionResponse[GetBuildkiteQueuesResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	qs, err := listQueues(ctx, c)
+	if err != nil {
+		return resp{}, fmt.Errorf("list buildkite queues: %w", err)
+	}
+	out := GetBuildkiteQueuesResult{Queues: []BuildkiteQueueInfo{}}
+	for _, q := range qs {
+		info, err := queueInfo(q)
+		if err != nil {
+			return resp{}, err
+		}
+		out.Queues = append(out.Queues, info)
+	}
+	return resp{Output: out}, nil
+}

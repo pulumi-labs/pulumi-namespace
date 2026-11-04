@@ -279,3 +279,27 @@ func (f *GetBlueprints) Invoke(
 	}
 	return infer.FunctionResponse[GetBlueprintsResult]{Output: out}, nil
 }
+
+// ---- getBlueprint ----
+
+// GetBlueprint reads one image blueprint.
+type GetBlueprint struct{}
+
+type GetBlueprintArgs struct {
+	Name string `pulumi:"name"`
+}
+
+func (f *GetBlueprint) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one image blueprint by name, including its spec and the reference of the built image.")
+}
+
+func (a *GetBlueprintArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.Name, "The blueprint name.")
+}
+
+func (f *GetBlueprint) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetBlueprintArgs],
+) (infer.FunctionResponse[BlueprintState], error) {
+	st, err := readLookup(ctx, "blueprint", req.Input.Name, (&Blueprint{}).Read)
+	return infer.FunctionResponse[BlueprintState]{Output: st}, err
+}

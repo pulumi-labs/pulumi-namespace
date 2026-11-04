@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"strings"
 	"sync"
 	"testing"
@@ -134,6 +135,15 @@ type nsFake struct {
 	repos        map[string]*nsFakeRegPolicy
 	blueprints   map[string]*imagev1.ImageBlueprint
 	blueprintVer map[string]int
+
+	sharedImages []*registryv1.SharedImage
+	ingresses    map[string][]*computev1.AllocatedIngress // by instance id
+	// ingressRename, when set, rewrites the name the server allocates (it normalises or suffixes names).
+	ingressRename func(string) string
+	// ingressHideResponse makes CreateIngress allocate but return no ingresses.
+	ingressHideResponse bool
+	members             []*iamv1.TenantMember
+	callerPols          []*iamv1.TenantPolicy
 }
 
 func newNSFake(t *testing.T) *nsFake {
@@ -146,6 +156,7 @@ func newNSFake(t *testing.T) *nsFake {
 		groups: map[string]*iamv1.DescribeTenantGroupResponse{}, instances: map[string]*nsFakeInstance{},
 		rebuilds: map[string]int{}, egress: map[string]*nsFakeEgress{}, repos: map[string]*nsFakeRegPolicy{},
 		blueprints: map[string]*imagev1.ImageBlueprint{}, blueprintVer: map[string]int{},
+		ingresses:  map[string][]*computev1.AllocatedIngress{},
 		regDefault: nsFakeRegPolicy{rev: 1},
 	}
 	f.register()
@@ -792,6 +803,144 @@ func (f *nsFake) register() {
 			res.Blueprints = append(res.Blueprints, b)
 		}
 		return res, nil
+	})
+
+	// ---- vault list ----
+	f.reg(vault, "ListObjects", func() proto.Message { return &vaultv1.ListObjectsRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		in := m.(*vaultv1.ListObjectsRequest)
+		var ids []string
+		for id := range f.vault {
+			ids = append(ids, id)
+		}
+		sort.Strings(ids)
+		res := &vaultv1.ListObjectsResponse{}
+	objects:
+		for _, id := range ids {
+			md := f.vault[id].md
+			for _, want := range in.GetLabelFilter() {
+				ok := false
+				for _, l := range md.GetLabels() {
+					ok = ok || (l.GetName() == want.GetName() && l.GetValue() == want.GetValue())
+				}
+				if !ok {
+					continue objects
+				}
+			}
+			res.Objects = append(res.Objects, md)
+		}
+		return res, nil
+	})
+
+	// ---- egress list ----
+	f.reg(egr, "ListEgressPolicies", func() proto.Message { return &networkv1.ListEgressPoliciesRequest{} }, func(proto.Message) (proto.Message, *rpcErr) {
+		var tags []string
+		for tag := range f.egress {
+			tags = append(tags, tag)
+		}
+		sort.Strings(tags)
+		res := &networkv1.ListEgressPoliciesResponse{}
+		for _, tag := range tags {
+			e := f.egress[tag]
+			res.Policies = append(res.Policies, &networkv1.ListEgressPoliciesResponse_EgressPolicyEntry{Policy: redactEgress(e.pol), Revision: e.rev})
+		}
+		return res, nil
+	})
+
+	// ---- tenant members and the caller's own policies ----
+	const membership = "namespace.cloud.iam.v1beta.TenantMembershipService"
+	f.reg(membership, "ListTenantMembers", func() proto.Message { return &iamv1.ListTenantMembersRequest{} }, func(proto.Message) (proto.Message, *rpcErr) {
+		return &iamv1.ListTenantMembersResponse{Members: f.members}, nil
+	})
+	f.reg(tenant, "DescribePolicies", func() proto.Message { return &iamv1.DescribePoliciesRequest{} }, func(proto.Message) (proto.Message, *rpcErr) {
+		return &iamv1.DescribePoliciesResponse{Policies: f.callerPols, Revision: 7}, nil
+	})
+
+	// ---- shared images ----
+	f.reg(regsvc, "ShareImage", func() proto.Message { return &registryv1.ShareImageRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		in := m.(*registryv1.ShareImageRequest)
+		if in.GetVisibility() == registryv1.Visibility_UNKNOWN_VISIBILITY {
+			return nil, &rpcErr{status: 400, code: "invalid_argument", msg: "visibility is required"}
+		}
+		id := f.nextID("shared")
+		ref := "public.nscr.io/" + id
+		if in.GetSuffix() != "" {
+			ref += "/" + in.GetSuffix()
+		}
+		s := &registryv1.SharedImage{Id: id, SharedRepository: in.GetRepository(), SharedDigest: in.GetDigest(),
+			ExpiresAt: in.GetExpiresAt(), ImageRef: ref, Visibility: in.GetVisibility(), Suffix: in.GetSuffix()}
+		f.sharedImages = append(f.sharedImages, s)
+		return s, nil
+	})
+	f.reg(regsvc, "ListSharedImages", func() proto.Message { return &registryv1.ListSharedImagesRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		in := m.(*registryv1.ListSharedImagesRequest)
+		res := &registryv1.ListSharedImagesResponse{}
+		for _, s := range f.sharedImages {
+			if in.GetMatchVisibility() != registryv1.Visibility_UNKNOWN_VISIBILITY && s.GetVisibility() != in.GetMatchVisibility() {
+				continue
+			}
+			res.SharedImages = append(res.SharedImages, s)
+		}
+		return res, nil
+	})
+	f.reg(regsvc, "UnshareImage", func() proto.Message { return &registryv1.UnshareImageRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		id := m.(*registryv1.UnshareImageRequest).GetId()
+		for i, s := range f.sharedImages {
+			if s.GetId() == id {
+				f.sharedImages = append(f.sharedImages[:i], f.sharedImages[i+1:]...)
+				return empty(), nil
+			}
+		}
+		return nil, errNotFound("shared image not found")
+	})
+
+	// ---- instance ingresses ----
+	f.reg(comp, "CreateIngress", func() proto.Message { return &computev1.CreateIngressRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		in := m.(*computev1.CreateIngressRequest)
+		if _, e := inRegion(in.GetInstanceId(), "CreateIngress"); e != nil {
+			return nil, e
+		}
+		res := &computev1.CreateIngressResponse{}
+		for _, r := range in.GetIngresses() {
+			if r.GetExportedPortBackend().GetPort() == 0 {
+				return nil, &rpcErr{status: 400, code: "invalid_argument", msg: "port is required"}
+			}
+			name := r.GetName()
+			if name == "" {
+				name = "wild"
+			}
+			if f.ingressRename != nil {
+				name = f.ingressRename(name)
+			}
+			a := &computev1.AllocatedIngress{Name: name, Fqdn: name + "-" + in.GetInstanceId() + ".example.test",
+				Description: fmt.Sprintf("port %d", r.GetExportedPortBackend().GetPort()), IngressId: f.nextID("ing")}
+			f.ingresses[in.GetInstanceId()] = append(f.ingresses[in.GetInstanceId()], a)
+			res.AllocatedIngresses = append(res.AllocatedIngresses, a)
+		}
+		if f.ingressHideResponse {
+			res.AllocatedIngresses = nil
+		}
+		return res, nil
+	})
+	f.reg(comp, "ListIngresses", func() proto.Message { return &computev1.ListIngressesRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		in := m.(*computev1.ListIngressesRequest)
+		if _, e := inRegion(in.GetInstanceId(), "ListIngresses"); e != nil {
+			return nil, e
+		}
+		return &computev1.ListIngressesResponse{AllocatedIngresses: f.ingresses[in.GetInstanceId()]}, nil
+	})
+	f.reg(comp, "DeleteIngress", func() proto.Message { return &computev1.DeleteIngressRequest{} }, func(m proto.Message) (proto.Message, *rpcErr) {
+		in := m.(*computev1.DeleteIngressRequest)
+		if _, e := inRegion(in.GetInstanceId(), "DeleteIngress"); e != nil {
+			return nil, e
+		}
+		list := f.ingresses[in.GetInstanceId()]
+		for i, a := range list {
+			if a.GetIngressId() == in.GetIngressId() {
+				f.ingresses[in.GetInstanceId()] = append(list[:i], list[i+1:]...)
+				return empty(), nil
+			}
+		}
+		return nil, errNotFound("ingress not found")
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	vaultv1 "buf.build/gen/go/namespace/cloud/protocolbuffers/go/proto/namespace/cloud/vault/v1beta"
+	"buf.build/gen/go/namespace/cloud/protocolbuffers/go/proto/namespace/stdlib"
 	"github.com/pulumi/pulumi-go-provider/infer"
 )
 
@@ -201,4 +202,140 @@ func derefStr(p *string) string {
 
 func derefBool(p *bool) bool {
 	return p != nil && *p
+}
+
+// ---- getVaultObject / getVaultObjects ----
+
+// GetVaultObject reads one vault object.
+type GetVaultObject struct{}
+
+type GetVaultObjectArgs struct {
+	ObjectID string `pulumi:"objectId"`
+}
+
+type GetVaultObjectResult struct {
+	ObjectID    string            `pulumi:"objectId"`
+	Description string            `pulumi:"description"`
+	Labels      map[string]string `pulumi:"labels"`
+	Version     string            `pulumi:"version"`
+	CreatedAt   string            `pulumi:"createdAt"`
+	// Revealable is true when the API returned the value, which it only does for revealable objects.
+	Revealable bool    `pulumi:"revealable"`
+	Value      *string `pulumi:"value,optional" provider:"secret"`
+}
+
+func (f *GetVaultObject) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one Namespace vault object by ID. The secret 'value' is only returned for revealable objects.")
+}
+
+func (a *GetVaultObjectArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.ObjectID, "The vault object ID.")
+}
+
+func (r *GetVaultObjectResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.ObjectID, "The vault object ID.")
+	ann.Describe(&r.Description, "The object description.")
+	ann.Describe(&r.Labels, "Labels attached to the object, including system labels.")
+	ann.Describe(&r.Version, "The current version identifier.")
+	ann.Describe(&r.CreatedAt, "RFC3339 creation time.")
+	ann.Describe(&r.Revealable, "True when the API returned the value (only revealable objects expose it).")
+	ann.Describe(&r.Value, "The decrypted secret value. Secret. Only set for revealable objects.")
+}
+
+func (f *GetVaultObject) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetVaultObjectArgs],
+) (infer.FunctionResponse[GetVaultObjectResult], error) {
+	type resp = infer.FunctionResponse[GetVaultObjectResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	var res vaultv1.DescribeObjectResponse
+	err = c.call(ctx, c.endpoints.globalURL(), vaultService, "DescribeObject",
+		&vaultv1.DescribeObjectRequest{ObjectId: req.Input.ObjectID}, &res)
+	if isNotFound(err) || (err == nil && (res.GetMetadata() == nil || res.GetMetadata().GetDeletedAt() != nil)) {
+		return resp{}, errLookupNotFound("vault object", req.Input.ObjectID)
+	}
+	if err != nil {
+		return resp{}, fmt.Errorf("read vault object %q: %w", req.Input.ObjectID, err)
+	}
+	out := vaultResult(res.GetMetadata())
+	if v := res.GetValue(); v != "" {
+		out.Value, out.Revealable = &v, true
+	}
+	return resp{Output: out}, nil
+}
+
+func vaultResult(md *vaultv1.VaultObjectMetadata) GetVaultObjectResult {
+	labels := labelsFromProto(md.GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	return GetVaultObjectResult{
+		ObjectID: md.GetObjectId(), Description: md.GetDescription(), Labels: labels,
+		Version: md.GetVersion(), CreatedAt: formatTimestamp(md.GetCreatedAt()),
+	}
+}
+
+// GetVaultObjects lists vault objects.
+type GetVaultObjects struct{}
+
+type GetVaultObjectsArgs struct {
+	// Labels restricts the result to objects carrying all of these labels.
+	Labels map[string]string `pulumi:"labels,optional"`
+}
+
+// VaultObjectSummary is one vault object in a listing; the value is never listed.
+type VaultObjectSummary struct {
+	ObjectID    string            `pulumi:"objectId"`
+	Description string            `pulumi:"description"`
+	Labels      map[string]string `pulumi:"labels"`
+	Version     string            `pulumi:"version"`
+	CreatedAt   string            `pulumi:"createdAt"`
+}
+
+type GetVaultObjectsResult struct {
+	Objects []VaultObjectSummary `pulumi:"objects"`
+}
+
+func (f *GetVaultObjects) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Lists Namespace vault objects (metadata only, never values), optionally filtered by labels.")
+}
+
+func (a *GetVaultObjectsArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.Labels, "Only return objects carrying all of these labels.")
+}
+
+func (r *GetVaultObjectsResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Objects, "The matching vault objects.")
+}
+
+func (f *GetVaultObjects) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetVaultObjectsArgs],
+) (infer.FunctionResponse[GetVaultObjectsResult], error) {
+	type resp = infer.FunctionResponse[GetVaultObjectsResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	var filters []*stdlib.LabelFilterEntry
+	for _, l := range labelsToProto(req.Input.Labels) {
+		filters = append(filters, &stdlib.LabelFilterEntry{Name: l.GetName(), Value: l.GetValue(), Op: stdlib.LabelFilterEntry_EQUAL})
+	}
+	var res vaultv1.ListObjectsResponse
+	if err := c.call(ctx, c.endpoints.globalURL(), vaultService, "ListObjects",
+		&vaultv1.ListObjectsRequest{LabelFilter: filters}, &res); err != nil {
+		return resp{}, fmt.Errorf("list vault objects: %w", err)
+	}
+	out := GetVaultObjectsResult{Objects: []VaultObjectSummary{}}
+	for _, md := range res.GetObjects() {
+		if md.GetDeletedAt() != nil {
+			continue
+		}
+		v := vaultResult(md)
+		out.Objects = append(out.Objects, VaultObjectSummary{
+			ObjectID: v.ObjectID, Description: v.Description, Labels: v.Labels, Version: v.Version, CreatedAt: v.CreatedAt,
+		})
+	}
+	return resp{Output: out}, nil
 }

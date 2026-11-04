@@ -252,3 +252,27 @@ func (f *GetTenantGroups) Invoke(
 	}
 	return infer.FunctionResponse[GetTenantGroupsResult]{Output: out}, nil
 }
+
+// ---- getTenantGroup ----
+
+// GetTenantGroup reads one tenant group.
+type GetTenantGroup struct{}
+
+type GetTenantGroupArgs struct {
+	Name string `pulumi:"name"`
+}
+
+func (f *GetTenantGroup) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one IAM tenant group by name, including the IDs of the tenants enrolled in it.")
+}
+
+func (a *GetTenantGroupArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.Name, "The group name.")
+}
+
+func (f *GetTenantGroup) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetTenantGroupArgs],
+) (infer.FunctionResponse[TenantGroupState], error) {
+	st, err := readLookup(ctx, "tenant group", req.Input.Name, (&TenantGroup{}).Read)
+	return infer.FunctionResponse[TenantGroupState]{Output: st}, err
+}

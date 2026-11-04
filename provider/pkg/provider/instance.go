@@ -633,3 +633,94 @@ func (f *GetInstances) Invoke(
 	}
 	return infer.FunctionResponse[GetInstancesResult]{Output: out}, nil
 }
+
+// ---- getInstance ----
+
+// GetInstance reads one compute instance.
+type GetInstance struct{}
+
+type GetInstanceArgs struct {
+	InstanceID string  `pulumi:"instanceId"`
+	Region     *string `pulumi:"region,optional"`
+}
+
+type GetInstanceResult struct {
+	InstanceID        string                 `pulumi:"instanceId"`
+	Region            string                 `pulumi:"region"`
+	Status            string                 `pulumi:"status"`
+	CreatedAt         string                 `pulumi:"createdAt"`
+	ReadyAt           string                 `pulumi:"readyAt"`
+	ExpiresAt         string                 `pulumi:"expiresAt"`
+	DocumentedPurpose string                 `pulumi:"documentedPurpose"`
+	Shape             InstanceShape          `pulumi:"shape"`
+	Labels            map[string]string      `pulumi:"labels"`
+	InstanceURL       string                 `pulumi:"instanceUrl"`
+	IngressDomain     string                 `pulumi:"ingressDomain"`
+	Services          []InstanceServiceState `pulumi:"services"`
+	ContainerCount    int                    `pulumi:"containerCount"`
+}
+
+func (f *GetInstance) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one Namespace compute instance by ID, including instances that run containers. "+
+		"Fails when the instance does not exist or has been destroyed.")
+}
+
+func (a *GetInstanceArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.InstanceID, "The instance ID.")
+	ann.Describe(&a.Region, "Region the instance runs in, such as 'us' or 'eu'. Defaults to the provider region.")
+}
+
+func (r *GetInstanceResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.InstanceID, "The instance ID.")
+	ann.Describe(&r.Region, "The region the instance was read from.")
+	ann.Describe(&r.Status, "Lifecycle status, such as RUNNING.")
+	ann.Describe(&r.CreatedAt, "RFC3339 creation time.")
+	ann.Describe(&r.ReadyAt, "RFC3339 time the instance became ready.")
+	ann.Describe(&r.ExpiresAt, "RFC3339 deadline currently enforced.")
+	ann.Describe(&r.DocumentedPurpose, "The free-form purpose note.")
+	ann.Describe(&r.Shape, "The hardware shape.")
+	ann.Describe(&r.Labels, "Labels attached to the instance, including system labels.")
+	ann.Describe(&r.InstanceURL, "Dashboard URL of the instance.")
+	ann.Describe(&r.IngressDomain, "Domain under which exported ports are served.")
+	ann.Describe(&r.Services, "Service endpoints reported by the instance.")
+	ann.Describe(&r.ContainerCount, "Number of containers running on the instance.")
+}
+
+func (f *GetInstance) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetInstanceArgs],
+) (infer.FunctionResponse[GetInstanceResult], error) {
+	type resp = infer.FunctionResponse[GetInstanceResult]
+	c, err := clientFor(ctx, req.Input.Region)
+	if err != nil {
+		return resp{}, err
+	}
+	var res computev1.DescribeInstanceResponse
+	err = c.call(ctx, c.endpoints.computeURL(c.region), computeService, "DescribeInstance",
+		&computev1.DescribeInstanceRequest{InstanceId: req.Input.InstanceID}, &res)
+	if isNotFound(err) {
+		return resp{}, errLookupNotFound("instance", req.Input.InstanceID)
+	}
+	if err != nil {
+		return resp{}, fmt.Errorf("read instance %q: %w", req.Input.InstanceID, err)
+	}
+	md := res.GetMetadata()
+	if md.GetStatus() == computev1.InstanceMetadata_DESTROYED || md.GetDestroyedAt() != nil {
+		return resp{}, errLookupNotFound("instance", req.Input.InstanceID)
+	}
+	var st InstanceState
+	applyInstance(&st, &res)
+	labels := labelsFromProto(md.GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	return resp{Output: GetInstanceResult{
+		InstanceID: req.Input.InstanceID, Region: c.region, Status: st.Status, CreatedAt: st.CreatedAt,
+		ReadyAt: st.ReadyAt, ExpiresAt: st.ExpiresAt, DocumentedPurpose: md.GetDocumentedPurpose(),
+		Shape: InstanceShape{
+			VirtualCPU: int(md.GetShape().GetVirtualCpu()), MemoryMegabytes: int(md.GetShape().GetMemoryMegabytes()),
+			MachineArch: emptyToNil(md.GetShape().GetMachineArch()), OS: emptyToNil(md.GetShape().GetOs()),
+		},
+		Labels: labels, InstanceURL: st.InstanceURL, IngressDomain: st.IngressDomain,
+		Services: st.Services, ContainerCount: len(res.GetContainers()),
+	}}, nil
+}

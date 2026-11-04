@@ -498,14 +498,17 @@ func TestChecks_RejectBadInputs(t *testing.T) {
 	assert.Empty(t, checkFails(t, s, "RegistryRepositoryPolicy", map[string]any{"repository": "r", "expirationSeconds": 20000}))
 }
 
-func TestRevokableToken_ImportIsRefused(t *testing.T) {
+// Import works from the ID alone: the metadata is read back, the bearer value
+// (only returned at creation) stays empty.
+func TestRevokableToken_ImportReadsMetadataWithoutBearer(t *testing.T) {
 	f := newFakeAPI(t)
 	f.ok(tokenSvc+"ListRevokableTokens", `{"tokens":[{"tokenId":"tok-1","name":"n","state":"ACTIVE"}]}`)
 	s := newServerFor(t, f)
-	_, err := s.Read(pgp.ReadRequest{ID: "tok-1", Urn: urn("RevokableToken", "t")})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "import is not supported")
-	assert.Empty(t, f.callsTo(tokenSvc+"ListRevokableTokens"), "must fail before touching the API")
+	r, err := s.Read(pgp.ReadRequest{ID: "tok-1", Urn: urn("RevokableToken", "t")})
+	require.NoError(t, err)
+	assert.Equal(t, "tok-1", r.ID)
+	assert.Equal(t, "n", str(r.Inputs, "name"))
+	assert.Equal(t, "", str(r.Properties, "bearerToken"))
 }
 
 func TestKeepDeclared_ZeroValuesRoundTrip(t *testing.T) {

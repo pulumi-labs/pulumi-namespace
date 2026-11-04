@@ -380,3 +380,122 @@ func (r *EgressPolicy) Delete(
 	}
 	return infer.DeleteResponse{}, nil
 }
+
+// ---- getEgressPolicy / getEgressPolicies ----
+
+const egressListMethod = "ListEgressPolicies"
+
+// EgressPolicyInfo is an egress policy as the API reports it.
+type EgressPolicyInfo struct {
+	Tag                  string       `pulumi:"tag"`
+	Description          *string      `pulumi:"description,optional"`
+	Mode                 string       `pulumi:"mode"`
+	DeepPacketInspection *bool        `pulumi:"deepPacketInspection,optional"`
+	Rules                []EgressRule `pulumi:"rules"`
+	AdditionalRulesets   []string     `pulumi:"additionalRulesets"`
+	Revision             int          `pulumi:"revision"`
+}
+
+func (e *EgressPolicyInfo) Annotate(ann infer.Annotator) {
+	ann.Describe(&e.Tag, "The policy tag.")
+	ann.Describe(&e.Description, "The policy description.")
+	ann.Describe(&e.Mode, "Enforcement mode: DISABLED, ALLOW_ALL, ADVISORY or BLOCK.")
+	ann.Describe(&e.DeepPacketInspection, "Whether deep packet inspection is enabled.")
+	ann.Describe(&e.Rules, "Ordered rules of the policy. Secret inject values are redacted by the API.")
+	ann.Describe(&e.AdditionalRulesets, "Names of predefined rulesets included.")
+	ann.Describe(&e.Revision, "The server revision of the policy.")
+}
+
+func egressInfo(p *networkv1.EgressPolicy, rev int64) (EgressPolicyInfo, error) {
+	var st EgressPolicyState
+	if err := applyEgress(&st, p, rev, nil); err != nil {
+		return EgressPolicyInfo{}, err
+	}
+	a := st.EgressPolicyArgs
+	info := EgressPolicyInfo{
+		Tag: a.Tag, Description: a.Description, Mode: a.Mode, DeepPacketInspection: a.DeepPacketInspection,
+		Rules: a.Rules, AdditionalRulesets: a.AdditionalRulesets, Revision: st.Revision,
+	}
+	if info.Rules == nil {
+		info.Rules = []EgressRule{}
+	}
+	if info.AdditionalRulesets == nil {
+		info.AdditionalRulesets = []string{}
+	}
+	return info, nil
+}
+
+// GetEgressPolicy reads one egress policy.
+type GetEgressPolicy struct{}
+
+type GetEgressPolicyArgs struct {
+	Tag string `pulumi:"tag"`
+}
+
+func (f *GetEgressPolicy) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one egress policy by tag.")
+}
+
+func (a *GetEgressPolicyArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.Tag, "The policy tag.")
+}
+
+func (f *GetEgressPolicy) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetEgressPolicyArgs],
+) (infer.FunctionResponse[EgressPolicyInfo], error) {
+	type resp = infer.FunctionResponse[EgressPolicyInfo]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	res, err := getEgress(ctx, c, req.Input.Tag)
+	if isNotFound(err) || (err == nil && res.GetPolicy() == nil) {
+		return resp{}, errLookupNotFound("egress policy", req.Input.Tag)
+	}
+	if err != nil {
+		return resp{}, fmt.Errorf("read egress policy %q: %w", req.Input.Tag, err)
+	}
+	info, err := egressInfo(res.GetPolicy(), res.GetRevision())
+	return resp{Output: info}, err
+}
+
+// GetEgressPolicies lists egress policies.
+type GetEgressPolicies struct{}
+
+type GetEgressPoliciesArgs struct{}
+
+type GetEgressPoliciesResult struct {
+	Policies []EgressPolicyInfo `pulumi:"policies"`
+}
+
+func (f *GetEgressPolicies) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Lists the egress policies of the current tenant.")
+}
+
+func (r *GetEgressPoliciesResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Policies, "The egress policies.")
+}
+
+func (f *GetEgressPolicies) Invoke(
+	ctx context.Context, _ infer.FunctionRequest[GetEgressPoliciesArgs],
+) (infer.FunctionResponse[GetEgressPoliciesResult], error) {
+	type resp = infer.FunctionResponse[GetEgressPoliciesResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	var res networkv1.ListEgressPoliciesResponse
+	if err := c.call(ctx, c.endpoints.globalURL(), egressPolicyService, egressListMethod,
+		&networkv1.ListEgressPoliciesRequest{}, &res); err != nil {
+		return resp{}, fmt.Errorf("list egress policies: %w", err)
+	}
+	out := GetEgressPoliciesResult{Policies: []EgressPolicyInfo{}}
+	for _, e := range res.GetPolicies() {
+		info, err := egressInfo(e.GetPolicy(), e.GetRevision())
+		if err != nil {
+			return resp{}, err
+		}
+		out.Policies = append(out.Policies, info)
+	}
+	return resp{Output: out}, nil
+}

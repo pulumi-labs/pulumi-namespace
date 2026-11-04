@@ -154,6 +154,8 @@ func New() (pgp.Provider, error) {
 			infer.Resource[*TenantGroup, TenantGroupArgs, TenantGroupState](&TenantGroup{}),
 			infer.Resource[*RevokableToken, RevokableTokenArgs, RevokableTokenState](&RevokableToken{}),
 			infer.Resource[*Blueprint, BlueprintArgs, BlueprintState](&Blueprint{}),
+			infer.Resource[*SharedImage, SharedImageArgs, SharedImageState](&SharedImage{}),
+			infer.Resource[*InstanceIngress, InstanceIngressArgs, InstanceIngressState](&InstanceIngress{}),
 		).
 		WithFunctions(
 			infer.Function[*GetTenants, GetTenantsArgs, GetTenantsResult](&GetTenants{}),
@@ -166,6 +168,26 @@ func New() (pgp.Provider, error) {
 			infer.Function[*GetUsage, GetUsageArgs, GetUsageResult](&GetUsage{}),
 			infer.Function[*GetVolumes, GetVolumesArgs, GetVolumesResult](&GetVolumes{}),
 			infer.Function[*GetGithubJobs, GetGithubJobsArgs, GetGithubJobsResult](&GetGithubJobs{}),
+			infer.Function[*GetVaultObject, GetVaultObjectArgs, GetVaultObjectResult](&GetVaultObject{}),
+			infer.Function[*GetVaultObjects, GetVaultObjectsArgs, GetVaultObjectsResult](&GetVaultObjects{}),
+			infer.Function[*GetTenant, GetTenantArgs, TenantState](&GetTenant{}),
+			infer.Function[*GetInstance, GetInstanceArgs, GetInstanceResult](&GetInstance{}),
+			infer.Function[*GetGithubProfile, GetGithubProfileArgs, GithubProfileState](&GetGithubProfile{}),
+			infer.Function[*GetTenantGroup, GetTenantGroupArgs, TenantGroupState](&GetTenantGroup{}),
+			infer.Function[*GetBlueprint, GetBlueprintArgs, BlueprintState](&GetBlueprint{}),
+			infer.Function[*GetEgressPolicy, GetEgressPolicyArgs, EgressPolicyInfo](&GetEgressPolicy{}),
+			infer.Function[*GetEgressPolicies, GetEgressPoliciesArgs, GetEgressPoliciesResult](&GetEgressPolicies{}),
+			infer.Function[*GetBuildkiteQueue, GetBuildkiteQueueArgs, BuildkiteQueueInfo](&GetBuildkiteQueue{}),
+			infer.Function[*GetBuildkiteQueues, GetBuildkiteQueuesArgs, GetBuildkiteQueuesResult](&GetBuildkiteQueues{}),
+			infer.Function[*GetRegistryDefaultPolicy, GetRegistryDefaultPolicyArgs, GetRegistryDefaultPolicyResult](&GetRegistryDefaultPolicy{}),
+			infer.Function[*GetRegistryRepositoryPolicy, GetRegistryRepositoryPolicyArgs, GetRegistryRepositoryPolicyResult](&GetRegistryRepositoryPolicy{}),
+			infer.Function[*GetRevokableToken, GetRevokableTokenArgs, RevokableTokenInfo](&GetRevokableToken{}),
+			infer.Function[*GetRevokableTokens, GetRevokableTokensArgs, GetRevokableTokensResult](&GetRevokableTokens{}),
+			infer.Function[*GetTenantMembers, GetTenantMembersArgs, GetTenantMembersResult](&GetTenantMembers{}),
+			infer.Function[*GetTenantPolicies, GetTenantPoliciesArgs, GetTenantPoliciesResult](&GetTenantPolicies{}),
+			infer.Function[*GetSharedImage, GetSharedImageArgs, SharedImageInfo](&GetSharedImage{}),
+			infer.Function[*GetSharedImages, GetSharedImagesArgs, GetSharedImagesResult](&GetSharedImages{}),
+			infer.Function[*GetInstanceIngress, GetInstanceIngressArgs, GetInstanceIngressResult](&GetInstanceIngress{}),
 		).
 		Build()
 }

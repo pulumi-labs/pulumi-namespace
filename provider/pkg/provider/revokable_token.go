@@ -71,8 +71,8 @@ type RevokableTokenState struct {
 
 func (r *RevokableToken) Annotate(a infer.Annotator) {
 	a.Describe(&r, "A revokable Namespace bearer token. The bearer value is exposed as the secret output "+
-		"'bearerToken' and is only available at creation (it cannot be read back, so tokens "+
-		"cannot be imported). All identity-defining inputs replace the token. Changing 'refreshTrigger' extends the token in "+
+		"'bearerToken' and is only available at creation: it cannot be read back, so an imported token has an "+
+		"empty 'bearerToken' (and no policies, which the API does not list). Import with the token ID. All identity-defining inputs replace the token. Changing 'refreshTrigger' extends the token in "+
 		"place via RefreshRevokableToken. Destroying revokes the token.")
 }
 
@@ -90,7 +90,7 @@ func (a *RevokableTokenArgs) Annotate(ann infer.Annotator) {
 func (s *RevokableTokenState) Annotate(ann infer.Annotator) {
 	ann.Describe(&s.TokenID, "The token identifier.")
 	ann.Describe(&s.TenantID, "The tenant the token belongs to.")
-	ann.Describe(&s.BearerToken, "The bearer token value. Secret. Only known when this provider created the token.")
+	ann.Describe(&s.BearerToken, "The bearer token value. Secret. Only known when this provider created the token; empty for imported tokens, so a consumer of this secret gets an empty string.")
 	ann.Describe(&s.TokenState, "ACTIVE, REVOKED or EXPIRED.")
 	ann.Describe(&s.CreatedAt, "RFC3339 creation time.")
 	ann.Describe(&s.TokenExpiresAt, "RFC3339 current expiry; moves forward after a refresh.")
@@ -192,14 +192,6 @@ func (r *RevokableToken) Read(
 	ctx context.Context, req infer.ReadRequest[RevokableTokenArgs, RevokableTokenState],
 ) (infer.ReadResponse[RevokableTokenArgs, RevokableTokenState], error) {
 	type resp = infer.ReadResponse[RevokableTokenArgs, RevokableTokenState]
-	if req.State.TokenID == "" {
-		// Import: the bearer secret is only returned by CreateRevokableToken and
-		// cannot be recovered. An imported resource would hold no secret, and a
-		// later refresh trigger would replace the token while delete revokes the
-		// one that was imported, so refuse instead of advertising a broken path.
-		return resp{}, fmt.Errorf("import revokable token %q: import is not supported because the bearer "+
-			"token is only returned at creation and cannot be recovered; create the token with Pulumi instead", req.ID)
-	}
 	c, err := clientFor(ctx, nil)
 	if err != nil {
 		return resp{}, err
@@ -213,6 +205,7 @@ func (r *RevokableToken) Read(
 		// recreated instead of lingering in state as healthy.
 		return resp{}, nil
 	}
+	imported := req.State.TokenID == ""
 	state := req.State // keeps the secret bearer token and the inputs it cannot read back (policies, expiresAt)
 	state.Name = t.GetName()
 	if state.Description != nil || t.GetDescription() != "" {
@@ -223,13 +216,15 @@ func (r *RevokableToken) Read(
 	if state.Scope != nil && t.GetScope() != iamv1.RevokableToken_SCOPE_UNKNOWN {
 		state.Scope = ptr(t.GetScope().String())
 	}
-	if len(state.Grants) > 0 {
+	if imported || len(state.Grants) > 0 {
 		grants := make([]TokenGrant, 0, len(t.GetPermissions()))
 		for _, p := range t.GetPermissions() {
 			grants = append(grants, TokenGrant{ResourceType: p.GetResourceType(), ResourceID: p.GetResourceId(),
 				Actions: append([]string{}, p.GetActions()...)})
 		}
-		state.Grants = grants
+		if !imported || len(grants) > 0 {
+			state.Grants = grants
+		}
 	}
 	applyToken(&state, t)
 	return resp{ID: req.ID, Inputs: state.RevokableTokenArgs, State: state}, nil
@@ -279,4 +274,128 @@ func (r *RevokableToken) Delete(
 		return infer.DeleteResponse{}, fmt.Errorf("revoke revokable token %q: %w", req.ID, err)
 	}
 	return infer.DeleteResponse{}, nil
+}
+
+// ---- getRevokableToken / getRevokableTokens ----
+
+// RevokableTokenInfo is the metadata of a revokable token. The bearer value is
+// only returned when a token is created, so it is never part of a lookup.
+type RevokableTokenInfo struct {
+	TokenID        string       `pulumi:"tokenId"`
+	TenantID       string       `pulumi:"tenantId"`
+	Name           string       `pulumi:"name"`
+	Description    string       `pulumi:"description"`
+	Scope          string       `pulumi:"scope"`
+	TokenState     string       `pulumi:"tokenState"`
+	CreatedAt      string       `pulumi:"createdAt"`
+	TokenExpiresAt string       `pulumi:"tokenExpiresAt"`
+	Grants         []TokenGrant `pulumi:"grants"`
+}
+
+func (t *RevokableTokenInfo) Annotate(ann infer.Annotator) {
+	ann.Describe(&t.TokenID, "The token identifier.")
+	ann.Describe(&t.TenantID, "The tenant the token belongs to.")
+	ann.Describe(&t.Name, "The token name.")
+	ann.Describe(&t.Description, "The token description.")
+	ann.Describe(&t.Scope, "TENANT_SCOPE or TENANT_MEMBERSHIP_SCOPE.")
+	ann.Describe(&t.TokenState, "ACTIVE, REVOKED or EXPIRED.")
+	ann.Describe(&t.CreatedAt, "RFC3339 creation time.")
+	ann.Describe(&t.TokenExpiresAt, "RFC3339 current expiry.")
+	ann.Describe(&t.Grants, "Permission grants of the token.")
+}
+
+func tokenInfo(t *iamv1.RevokableToken) RevokableTokenInfo {
+	grants := make([]TokenGrant, 0, len(t.GetPermissions()))
+	for _, p := range t.GetPermissions() {
+		grants = append(grants, TokenGrant{ResourceType: p.GetResourceType(), ResourceID: p.GetResourceId(),
+			Actions: append([]string{}, p.GetActions()...)})
+	}
+	return RevokableTokenInfo{
+		TokenID: t.GetTokenId(), TenantID: t.GetTenantId(), Name: t.GetName(), Description: t.GetDescription(),
+		Scope: t.GetScope().String(), TokenState: t.GetState().String(), CreatedAt: formatTimestamp(t.GetCreatedAt()),
+		TokenExpiresAt: formatTimestamp(t.GetExpiresAt()), Grants: grants,
+	}
+}
+
+// GetRevokableToken reads the metadata of one revokable token.
+type GetRevokableToken struct{}
+
+type GetRevokableTokenArgs struct {
+	TokenID string `pulumi:"tokenId"`
+}
+
+func (f *GetRevokableToken) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads the metadata of one revokable token, including revoked and expired ones. "+
+		"The bearer value is only returned when a token is created, so it is never part of the result.")
+}
+
+func (a *GetRevokableTokenArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.TokenID, "The token ID.")
+}
+
+func (f *GetRevokableToken) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetRevokableTokenArgs],
+) (infer.FunctionResponse[RevokableTokenInfo], error) {
+	type resp = infer.FunctionResponse[RevokableTokenInfo]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	t, err := findToken(ctx, c, req.Input.TokenID)
+	if err != nil {
+		return resp{}, fmt.Errorf("read revokable token %q: %w", req.Input.TokenID, err)
+	}
+	if t == nil {
+		return resp{}, errLookupNotFound("revokable token", req.Input.TokenID)
+	}
+	return resp{Output: tokenInfo(t)}, nil
+}
+
+// GetRevokableTokens lists revokable tokens.
+type GetRevokableTokens struct{}
+
+type GetRevokableTokensArgs struct {
+	IncludeRevoked *bool `pulumi:"includeRevoked,optional"`
+}
+
+type GetRevokableTokensResult struct {
+	Tokens []RevokableTokenInfo `pulumi:"tokens"`
+}
+
+func (f *GetRevokableTokens) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Lists the revokable tokens of the current tenant (metadata only, never bearer values).")
+}
+
+func (a *GetRevokableTokensArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.IncludeRevoked, "Also return revoked tokens. Defaults to false.")
+}
+
+func (r *GetRevokableTokensResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Tokens, "The matching tokens.")
+}
+
+func (f *GetRevokableTokens) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetRevokableTokensArgs],
+) (infer.FunctionResponse[GetRevokableTokensResult], error) {
+	type resp = infer.FunctionResponse[GetRevokableTokensResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	out := GetRevokableTokensResult{Tokens: []RevokableTokenInfo{}}
+	err = paginate("ListRevokableTokens", func(cursor []byte) ([]byte, error) {
+		var res iamv1.ListRevokableTokensResponse
+		if err := c.call(ctx, c.endpoints.iamURL(), tokenService, "ListRevokableTokens",
+			&iamv1.ListRevokableTokensRequest{PaginationCursor: cursor, MaxEntries: 100, IncludeRevoked: derefBool(req.Input.IncludeRevoked)}, &res); err != nil {
+			return nil, err
+		}
+		for _, t := range res.GetTokens() {
+			out.Tokens = append(out.Tokens, tokenInfo(t))
+		}
+		return res.GetPaginationCursor(), nil
+	})
+	if err != nil {
+		return resp{}, fmt.Errorf("list revokable tokens: %w", err)
+	}
+	return resp{Output: out}, nil
 }

@@ -468,3 +468,92 @@ func (r *RegistryRepositoryPolicy) Delete(
 	}
 	return infer.DeleteResponse{}, nil
 }
+
+// ---- getRegistryDefaultPolicy / getRegistryRepositoryPolicy ----
+
+// GetRegistryDefaultPolicy reads the registry default expiration policy.
+type GetRegistryDefaultPolicy struct{}
+
+type GetRegistryDefaultPolicyArgs struct{}
+
+type GetRegistryDefaultPolicyResult struct {
+	DefaultExpirationSeconds *int    `pulumi:"defaultExpirationSeconds,optional"`
+	ExpirationEnforcement    *string `pulumi:"expirationEnforcement,optional"`
+	Revision                 int     `pulumi:"revision"`
+}
+
+func (f *GetRegistryDefaultPolicy) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads the default expiration policy of the Namespace container registry.")
+}
+
+func (r *GetRegistryDefaultPolicyResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.DefaultExpirationSeconds, "Default time in seconds after which pushed images expire. Unset when the registry has none.")
+	ann.Describe(&r.ExpirationEnforcement, "EXPIRATION_ENFORCEMENT_ENFORCE or EXPIRATION_ENFORCEMENT_DO_NOT_ENFORCE. Unset when the registry has none.")
+	ann.Describe(&r.Revision, "Server revision of the policy.")
+}
+
+func (f *GetRegistryDefaultPolicy) Invoke(
+	ctx context.Context, _ infer.FunctionRequest[GetRegistryDefaultPolicyArgs],
+) (infer.FunctionResponse[GetRegistryDefaultPolicyResult], error) {
+	type resp = infer.FunctionResponse[GetRegistryDefaultPolicyResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	cur, err := getDefaultPolicy(ctx, c)
+	if err != nil {
+		return resp{}, fmt.Errorf("read registry default policy: %w", err)
+	}
+	return resp{Output: GetRegistryDefaultPolicyResult{
+		DefaultExpirationSeconds: cur.Seconds, ExpirationEnforcement: cur.Enforcement, Revision: int(cur.Revision),
+	}}, nil
+}
+
+// GetRegistryRepositoryPolicy reads the expiration policy of one repository.
+type GetRegistryRepositoryPolicy struct{}
+
+type GetRegistryRepositoryPolicyArgs struct {
+	Repository string `pulumi:"repository"`
+}
+
+type GetRegistryRepositoryPolicyResult struct {
+	Repository            string  `pulumi:"repository"`
+	ExpirationSeconds     *int    `pulumi:"expirationSeconds,optional"`
+	ExpirationEnforcement *string `pulumi:"expirationEnforcement,optional"`
+	Revision              int     `pulumi:"revision"`
+}
+
+func (f *GetRegistryRepositoryPolicy) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads the expiration policy of one container registry repository.")
+}
+
+func (a *GetRegistryRepositoryPolicyArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.Repository, "The repository name.")
+}
+
+func (r *GetRegistryRepositoryPolicyResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Repository, "The repository name.")
+	ann.Describe(&r.ExpirationSeconds, "Time in seconds after which images in the repository expire. Unset when the repository has none.")
+	ann.Describe(&r.ExpirationEnforcement, "EXPIRATION_ENFORCEMENT_ENFORCE or EXPIRATION_ENFORCEMENT_DO_NOT_ENFORCE. Unset when the repository has none.")
+	ann.Describe(&r.Revision, "Server revision of the policy.")
+}
+
+func (f *GetRegistryRepositoryPolicy) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetRegistryRepositoryPolicyArgs],
+) (infer.FunctionResponse[GetRegistryRepositoryPolicyResult], error) {
+	type resp = infer.FunctionResponse[GetRegistryRepositoryPolicyResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	cur, err := getRepoPolicy(ctx, c, req.Input.Repository)
+	if isNotFound(err) {
+		return resp{}, errLookupNotFound("registry repository", req.Input.Repository)
+	}
+	if err != nil {
+		return resp{}, fmt.Errorf("read policy of repository %q: %w", req.Input.Repository, err)
+	}
+	return resp{Output: GetRegistryRepositoryPolicyResult{
+		Repository: req.Input.Repository, ExpirationSeconds: cur.Seconds, ExpirationEnforcement: cur.Enforcement, Revision: int(cur.Revision),
+	}}, nil
+}

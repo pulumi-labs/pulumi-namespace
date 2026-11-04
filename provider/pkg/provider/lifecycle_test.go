@@ -640,10 +640,7 @@ func TestLifecycle_RevokableToken(t *testing.T) {
 	assert.Equal(t, 600*time.Second, rq.GetMinimumDuration().AsDuration())
 	assert.Equal(t, before.Add(600*time.Second).UTC().Format(time.RFC3339), str(upd.Properties, "tokenExpiresAt"))
 
-	// Import is refused: the bearer token cannot be recovered.
-	_, err := s.Read(pgp.ReadRequest{ID: id, Urn: urn(typ, "r"), Properties: property.NewMap(nil), Inputs: property.NewMap(nil)})
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "import")
+	// Import (metadata only) is covered by TestLifecycle_RevokableTokenImport.
 
 	// Expired and revoked tokens read as gone so they are recreated; destroy stays quiet.
 	f.with(func() { f.tokens[0].tok.State = iamv1.RevokableToken_EXPIRED })
@@ -1176,7 +1173,7 @@ func TestRPCNamesExistInSchema(t *testing.T) {
 		"githubProfileService": githubProfileService, "githubJobsService": githubJobsService,
 		"egressPolicyService": egressPolicyService, "buildkiteQueueService": buildkiteQueueService,
 		"registryService": registryService, "tokenService": tokenService, "imageService": imageService,
-		"usageService": usageService, "storageService": storageService,
+		"usageService": usageService, "storageService": storageService, "tenantMembershipService": tenantMembershipService,
 	}
 	re := regexp.MustCompile(`\b(\w+Service),\s*"(\w+)"`)
 	files, err := filepath.Glob("*.go")

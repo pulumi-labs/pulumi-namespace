@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added
+
+- Lookup functions so every resource type can be read without managing it: `getVaultObject`, `getTenant` (by tenant ID or external account ID), `getInstance`, `getGithubProfile` (by profile ID or tag), `getTenantGroup`, `getBlueprint`, `getEgressPolicy`, `getBuildkiteQueue` (by queue ID or name), `getRegistryDefaultPolicy`, `getRegistryRepositoryPolicy`, `getRevokableToken` (metadata only, never the bearer value), plus the list functions `getVaultObjects`, `getEgressPolicies`, `getBuildkiteQueues`, `getRevokableTokens`, `getSharedImages` and the read-only lookups `getTenantMembers` and `getTenantPolicies`. A lookup of an object that does not exist fails with `... was not found`.
+- New resource `SharedImage` (`ShareImage` / `UnshareImage`) with `getSharedImage` and `getSharedImages`: shares a registry image under a public or partner reference. Import with the shared image ID.
+- New resource `InstanceIngress` (`CreateIngress` / `DeleteIngress`) with `getInstanceIngress`: exposes an instance port on an Internet-facing name. Import with `instanceId/ingressId` (or `region/instanceId/ingressId`). Create sends one request and uses the single ingress the API returns even if the server normalised or suffixed the requested name; any other response is resolved by listing the instance's ingresses by name, and fails naming the instance when the ingress cannot be identified. The exact shape of the `CreateIngress` response is unverified against the live API.
+- `RevokableToken` can now be imported by token ID. The bearer value cannot be recovered, so an imported token has an empty `bearerToken` (a secret output read by a consumer is an empty string), and destroying an imported token revokes a token other systems may still be using. Previously import was refused.
+- `research/coverage/namespace.md`, the coverage inventory of every service of the pinned Namespace API module with a class and reason for each, and the ranked list of what is deferred.
+
 ### Changed
 
 - Updated the generated Namespace Cloud protobuf bindings (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) to the 2026-11-03 build (`v1.36.12-20261103090127-5e7839020ace.2`). Upstream removed the unused `SuspendInstanceRequest` and `WakeInstanceRequest` messages and added `EnsureBlueprintRequest` and `EnsureBlueprintResponse` (compute and private devbox APIs); the provider does not call any of them, so there are no resource or schema changes.

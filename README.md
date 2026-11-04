@@ -134,7 +134,15 @@ An IAM tenant group with policies. `name` replaces; `policies` update in place t
 
 ### `namespace:index:RevokableToken`
 
-A revokable bearer token. The `bearerToken` output is a Pulumi secret and is only returned by the API at creation, so it is preserved in state and never logged. Identity inputs (`name`, `description`, `expiresAt`, `scope`, `policies`, `grants`) replace. Changing `refreshTrigger` calls `RefreshRevokableToken` (optionally with `refreshMinimumSeconds`) to extend the expiry in place. Destroy revokes the token. A token that is revoked or expired is treated as gone on refresh, so the next up recreates it. Refresh also reports drift in `name`, `description`, `scope` (only when declared) and `grants`. A token cannot be imported because its bearer value cannot be retrieved.
+A revokable bearer token. The `bearerToken` output is a Pulumi secret and is only returned by the API at creation, so it is preserved in state and never logged. Identity inputs (`name`, `description`, `expiresAt`, `scope`, `policies`, `grants`) replace. Changing `refreshTrigger` calls `RefreshRevokableToken` (optionally with `refreshMinimumSeconds`) to extend the expiry in place. Destroy revokes the token. A token that is revoked or expired is treated as gone on refresh, so the next up recreates it. Refresh also reports drift in `name`, `description`, `scope` (only when declared) and `grants`. Import with the token ID: the API returns a token's metadata but never its bearer value again, so an imported token has an empty `bearerToken` (and no `policies`, which the API does not list). A refresh trigger on an imported token extends it in place; to get a usable bearer, create the token with Pulumi. Anything that reads the secret `bearerToken` output of an imported token silently gets an empty string, so do not wire it into a consumer. Destroying an imported token revokes it, and other systems may still be using that token: remove it from state (`pulumi state delete`) instead if it must stay valid.
+
+### `namespace:index:SharedImage`
+
+Shares one registry image under a public or partner image reference. Inputs: `repository`, `digest`, `visibility` (`PUBLIC` or `PARTNER`), optional `suffix` and `expiresAt` (RFC 3339). The API has no update call, so every input replaces the share; destroy unshares the image. Outputs `sharedImageId` (the resource ID, also the import ID) and `imageRef`, the reference others pull from. Import with the shared image ID.
+
+### `namespace:index:InstanceIngress`
+
+Exposes one port of a running instance on an Internet-facing name. Inputs: `instanceId`, `port`, `name` (or `wildcard: true` for the instance wildcard domain; the two are mutually exclusive), optional `backendIpAddress`, `httpMatchRules` (`methods`, `path`, `doesNotRequireAuth`) and `region`. The API has no update call, so every input replaces the ingress; destroy deletes it. Outputs `ingressId`, `fqdn`, `description` and `effectiveRegion` (the region later calls use). The API reports back only the name, fqdn and description, so `port`, `backendIpAddress`, `httpMatchRules` and `wildcard` cannot be refreshed: an imported ingress has only `instanceId` and `name`, and the values your program declares are accepted without a replacement. The resource ID is `instanceId/ingressId`. Import with `instanceId/ingressId`, or `region/instanceId/ingressId` when the instance is outside the provider region.
 
 ### `namespace:index:Blueprint`
 
@@ -149,6 +157,27 @@ A custom base image blueprint built from either `dockerfileContent` or an apt-ba
 - `getUsage`: compute usage between `periodStart` and `periodEnd` (YYYY-MM-DD) with instance and build minutes totals and a per-day breakdown.
 - `getVolumes`: cache volumes and persistent volumes in a region.
 - `getGithubJobs`: GitHub jobs with optional repository, conclusion and time filters, capped by `maxJobs`.
+
+Every resource type also has a single-object lookup that reads the object by the ID the resource imports with, and fails with `... was not found` when it does not exist:
+
+| Function | Arguments | Notes |
+|---|---|---|
+| `getVaultObject` | `objectId` | Secret `value` only for revealable objects. |
+| `getVaultObjects` | optional `labels` | Metadata only, never values. |
+| `getTenant` | `tenantId` or `externalAccountId` | Several tenants sharing an external account is an error. |
+| `getInstance` | `instanceId`, optional `region` | Also reads instances that run containers. |
+| `getGithubProfile` | `profileId` or `tag` | |
+| `getTenantGroup` | `name` | Includes `enrolledTenantIds`. |
+| `getBlueprint` | `name` | |
+| `getEgressPolicy`, `getEgressPolicies` | `tag` | Secret inject values are redacted by the API. |
+| `getBuildkiteQueue`, `getBuildkiteQueues` | `queueId` or `queueName` | |
+| `getRegistryDefaultPolicy` | none | |
+| `getRegistryRepositoryPolicy` | `repository` | |
+| `getRevokableToken`, `getRevokableTokens` | `tokenId`; optional `includeRevoked` | Metadata only, never the bearer value. |
+| `getSharedImage`, `getSharedImages` | `sharedImageId`; optional `repository`, `visibility` | |
+| `getInstanceIngress` | `instanceId` and `ingressId` or `name`, optional `region` | |
+| `getTenantMembers` | none | Members of the token's own tenant. |
+| `getTenantPolicies` | none | Policies of the token's own tenant. |
 
 ## Example
 
@@ -181,7 +210,8 @@ Complete programs in all six languages are in [`examples/`](./examples) (`namesp
 
 - `getBuilds`: `ListBuilds` is a server-streaming RPC and does not fit the unary Connect JSON transport used here.
 - Trust relationships, Tailscale integration and workspace access controls are documented in nsc docs but are absent from the public schema in the pinned module version.
-- Operational RPCs (commands, log streaming, `Build`, image sharing, volume destruction) are actions rather than declarative state.
+- Operational RPCs (commands, log streaming, `Build`, volume destruction, minting short-lived credentials) are actions rather than declarative state.
+- `Instance` exposes about a fifth of `CreateInstanceRequest` (no secret env references, volumes, Kubernetes feature, network policy). The API cannot report those fields back, so they need a design for import first; see [`research/coverage/namespace.md`](../../../research/coverage/namespace.md) for the ranked list and the full service inventory.
 
 ## Development
 

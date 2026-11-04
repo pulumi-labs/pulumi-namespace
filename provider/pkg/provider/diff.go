@@ -59,3 +59,12 @@ func argValuesEqual(a, b reflect.Value) bool {
 	}
 	return reflect.DeepEqual(a.Interface(), b.Interface())
 }
+
+// diffArgs is the framework's default input diff, driven by the same
+// `provider:"replaceOnChanges"` struct tags that feed the schema, for resources
+// that need to adjust the prior inputs before comparing.
+func diffArgs[A any](old, cur A) infer.DiffResponse {
+	changed := map[string]pgp.PropertyDiff{}
+	collectArgDiffs(reflect.ValueOf(old), reflect.ValueOf(cur), changed)
+	return infer.DiffResponse{HasChanges: len(changed) > 0, DetailedDiff: changed}
+}

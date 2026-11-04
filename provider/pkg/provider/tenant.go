@@ -342,3 +342,156 @@ func (f *GetTenants) Invoke(
 	}
 	return infer.FunctionResponse[GetTenantsResult]{Output: out}, nil
 }
+
+const tenantMembershipService = "namespace.cloud.iam.v1beta.TenantMembershipService"
+
+// ---- getTenant ----
+
+// GetTenant reads one IAM tenant.
+type GetTenant struct{}
+
+type GetTenantArgs struct {
+	TenantID          *string `pulumi:"tenantId,optional"`
+	ExternalAccountID *string `pulumi:"externalAccountId,optional"`
+}
+
+func (f *GetTenant) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one Namespace IAM tenant, by tenant ID or by the external account ID it is linked to. "+
+		"Returns the same fields as the Tenant resource reports on import.")
+}
+
+func (a *GetTenantArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.TenantID, "The tenant ID. Set exactly one of tenantId and externalAccountId.")
+	ann.Describe(&a.ExternalAccountID, "The external account ID the tenant is linked to. Set exactly one of tenantId and externalAccountId.")
+}
+
+func (f *GetTenant) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetTenantArgs],
+) (infer.FunctionResponse[TenantState], error) {
+	type resp = infer.FunctionResponse[TenantState]
+	id, ext := derefStr(req.Input.TenantID), derefStr(req.Input.ExternalAccountID)
+	if (id == "") == (ext == "") {
+		return resp{}, errExactlyOne("getTenant", "tenantId", "externalAccountId")
+	}
+	if id == "" {
+		c, err := clientFor(ctx, nil)
+		if err != nil {
+			return resp{}, err
+		}
+		ts, err := listTenants(ctx, c, "", ext)
+		if err != nil {
+			return resp{}, fmt.Errorf("list tenants: %w", err)
+		}
+		switch len(ts) {
+		case 0:
+			return resp{}, errLookupNotFound("tenant with external account", ext)
+		case 1:
+			id = ts[0].GetId()
+		default:
+			return resp{}, fmt.Errorf("namespace: %d tenants are linked to external account %q; look one up by tenantId", len(ts), ext)
+		}
+	}
+	st, err := readLookup(ctx, "tenant", id, (&Tenant{}).Read)
+	return resp{Output: st}, err
+}
+
+// ---- getTenantMembers / getTenantPolicies ----
+
+// GetTenantMembers lists the members of the caller's tenant.
+type GetTenantMembers struct{}
+
+type GetTenantMembersArgs struct{}
+
+// TenantMemberInfo is one member of a tenant.
+type TenantMemberInfo struct {
+	UserID    string `pulumi:"userId"`
+	FirstName string `pulumi:"firstName"`
+	LastName  string `pulumi:"lastName"`
+	Email     string `pulumi:"email"`
+	Role      string `pulumi:"role"`
+}
+
+type GetTenantMembersResult struct {
+	Members []TenantMemberInfo `pulumi:"members"`
+}
+
+func (f *GetTenantMembers) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Lists the members of the tenant the token belongs to. The API can list and remove members but not add them.")
+}
+
+func (m *TenantMemberInfo) Annotate(ann infer.Annotator) {
+	ann.Describe(&m.UserID, "Opaque user ID.")
+	ann.Describe(&m.FirstName, "First name.")
+	ann.Describe(&m.LastName, "Last name.")
+	ann.Describe(&m.Email, "Email address.")
+	ann.Describe(&m.Role, "The member's role in the tenant.")
+}
+
+func (r *GetTenantMembersResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Members, "The tenant members.")
+}
+
+func (f *GetTenantMembers) Invoke(
+	ctx context.Context, _ infer.FunctionRequest[GetTenantMembersArgs],
+) (infer.FunctionResponse[GetTenantMembersResult], error) {
+	type resp = infer.FunctionResponse[GetTenantMembersResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	var res iamv1.ListTenantMembersResponse
+	if err := c.call(ctx, c.endpoints.iamURL(), tenantMembershipService, "ListTenantMembers",
+		&iamv1.ListTenantMembersRequest{}, &res); err != nil {
+		return resp{}, fmt.Errorf("list tenant members: %w", err)
+	}
+	out := GetTenantMembersResult{Members: []TenantMemberInfo{}}
+	for _, m := range res.GetMembers() {
+		out.Members = append(out.Members, TenantMemberInfo{
+			UserID: m.GetUserId(), FirstName: m.GetFirstName(), LastName: m.GetLastName(),
+			Email: m.GetEmail(), Role: m.GetRole().String(),
+		})
+	}
+	return resp{Output: out}, nil
+}
+
+// GetTenantPolicies reads the policies of the caller's own tenant.
+type GetTenantPolicies struct{}
+
+type GetTenantPoliciesArgs struct{}
+
+type GetTenantPoliciesResult struct {
+	Policies []TenantPolicy `pulumi:"policies"`
+	Revision int            `pulumi:"revision"`
+}
+
+func (f *GetTenantPolicies) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads the policies of the tenant the token belongs to.")
+}
+
+func (r *GetTenantPoliciesResult) Annotate(ann infer.Annotator) {
+	ann.Describe(&r.Policies, "The policies of the tenant.")
+	ann.Describe(&r.Revision, "Server revision of the policy set.")
+}
+
+func (f *GetTenantPolicies) Invoke(
+	ctx context.Context, _ infer.FunctionRequest[GetTenantPoliciesArgs],
+) (infer.FunctionResponse[GetTenantPoliciesResult], error) {
+	type resp = infer.FunctionResponse[GetTenantPoliciesResult]
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return resp{}, err
+	}
+	var res iamv1.DescribePoliciesResponse
+	if err := c.call(ctx, c.endpoints.iamURL(), tenantService, "DescribePolicies", &iamv1.DescribePoliciesRequest{}, &res); err != nil {
+		return resp{}, fmt.Errorf("read tenant policies: %w", err)
+	}
+	out := GetTenantPoliciesResult{Policies: []TenantPolicy{}, Revision: int(res.GetRevision())}
+	for _, p := range res.GetPolicies() {
+		tp := TenantPolicy{ID: p.GetId(), Policy: p.GetPolicy(), Value: p.GetValue()}
+		if e := p.GetExpirationPolicy().GetExpiresAt(); e != nil {
+			tp.ExpiresAt = ptr(formatTimestamp(e))
+		}
+		out.Policies = append(out.Policies, tp)
+	}
+	return resp{Output: out}, nil
+}

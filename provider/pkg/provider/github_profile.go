@@ -481,3 +481,54 @@ func (f *GetGithubProfiles) Invoke(
 	}
 	return infer.FunctionResponse[GetGithubProfilesResult]{Output: out}, nil
 }
+
+// ---- getGithubProfile ----
+
+// GetGithubProfile reads one GitHub runner profile.
+type GetGithubProfile struct{}
+
+type GetGithubProfileArgs struct {
+	ProfileID *string `pulumi:"profileId,optional"`
+	Tag       *string `pulumi:"tag,optional"`
+}
+
+func (f *GetGithubProfile) Annotate(a infer.Annotator) {
+	a.Describe(&f, "Reads one GitHub Actions runner profile, by profile ID or by tag. "+
+		"Returns the same fields as the GithubProfile resource reports on import.")
+}
+
+func (a *GetGithubProfileArgs) Annotate(ann infer.Annotator) {
+	ann.Describe(&a.ProfileID, "The profile ID. Set exactly one of profileId and tag.")
+	ann.Describe(&a.Tag, "The profile tag used in 'runs-on' labels. Set exactly one of profileId and tag.")
+}
+
+func (f *GetGithubProfile) Invoke(
+	ctx context.Context, req infer.FunctionRequest[GetGithubProfileArgs],
+) (infer.FunctionResponse[GithubProfileState], error) {
+	type resp = infer.FunctionResponse[GithubProfileState]
+	id, tag := derefStr(req.Input.ProfileID), derefStr(req.Input.Tag)
+	if (id == "") == (tag == "") {
+		return resp{}, errExactlyOne("getGithubProfile", "profileId", "tag")
+	}
+	if id == "" {
+		c, err := clientFor(ctx, nil)
+		if err != nil {
+			return resp{}, err
+		}
+		ps, err := listProfiles(ctx, c)
+		if err != nil {
+			return resp{}, fmt.Errorf("list github profiles: %w", err)
+		}
+		for _, p := range ps {
+			if p.GetSpec().GetTag() == tag {
+				id = p.GetProfileId()
+				break
+			}
+		}
+		if id == "" {
+			return resp{}, errLookupNotFound("github profile with tag", tag)
+		}
+	}
+	st, err := readLookup(ctx, "github profile", id, (&GithubProfile{}).Read)
+	return resp{Output: st}, err
+}
