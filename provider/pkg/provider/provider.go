@@ -1,3 +1,17 @@
+// Copyright 2026, Pulumi Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 // Package provider implements the Namespace Cloud Pulumi provider.
 //
 // Resources:
@@ -129,13 +143,29 @@ func New() (pgp.Provider, error) {
 	return infer.NewProviderBuilder().
 		WithDisplayName("Namespace Cloud").
 		WithDescription(
-			"Manage Namespace Cloud (namespace.so) resources: ephemeral compute instances, "+
+			"Experimental: manage Namespace Cloud (namespace.so) resources: ephemeral compute instances, "+
 				"vault secrets, IAM tenants and tokens, GitHub runner profiles, egress policy and registry policy, as infrastructure with Pulumi.",
 		).
 		WithHomepage("https://namespace.so").
-		WithRepository("https://github.com/pulumi/autoregistry").
-		WithGoImportPath("github.com/pulumi/pulumi-namespace/sdk/go/namespace").
-		WithPublisher("Pulumi").
+		WithRepository("https://github.com/pulumi-labs/pulumi-namespace").
+		WithPublisher("Pulumi Labs").
+		WithLanguageMap(map[string]any{
+			"go": map[string]any{"generateResourceContainerTypes": true, "respectSchemaVersion": true},
+			"nodejs": map[string]any{
+				"packageName":          "@pulumi-labs/namespace",
+				"packageDescription":   "Experimental: manage Namespace Cloud (namespace.so) resources: ephemeral compute instances, vault secrets, IAM tenants and tokens, GitHub runner profiles, egress policy and registry policy, as infrastructure with Pulumi.",
+				"respectSchemaVersion": true,
+			},
+			"python": map[string]any{
+				"packageName":          "pulumi_labs_namespace",
+				"respectSchemaVersion": true,
+				"pyproject":            map[string]any{"enabled": true},
+			},
+			"csharp": map[string]any{"rootNamespace": "Pulumi.Labs", "respectSchemaVersion": true},
+			"java":   map[string]any{"basePackage": "com.pulumi.labs", "respectSchemaVersion": true},
+		}).
+		WithGoImportPath("github.com/pulumi-labs/pulumi-namespace/sdk/go/namespace").
+		WithPluginDownloadURL("github://api.github.com/pulumi-labs/pulumi-namespace").
 		WithLicense("Apache-2.0").
 		WithKeywords("pulumi", "namespace", "namespace-cloud", "ci", "sandbox", "ephemeral-compute", "category/cloud").
 		WithModuleMap(map[tokens.ModuleName]tokens.ModuleName{

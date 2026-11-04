@@ -1,3 +1,17 @@
+// Copyright 2026, Pulumi Corporation.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package provider_test
 
 import (
@@ -50,8 +64,8 @@ func TestMetadata_DisplayNameIsHumanBranded(t *testing.T) {
 
 func TestMetadata_PublisherIsPulumi(t *testing.T) {
 	m := mustMetadataSchema(t)
-	if got := m["publisher"].(string); got != "Pulumi" {
-		t.Errorf("Publisher = %q, want %q", got, "Pulumi")
+	if got := m["publisher"].(string); got != "Pulumi Labs" {
+		t.Errorf("Publisher = %q, want %q", got, "Pulumi Labs")
 	}
 }
 
@@ -91,7 +105,7 @@ func TestMetadata_GoImportPathIsNotFabricated(t *testing.T) {
 	if strings.Contains(goLang, "local-package") {
 		t.Fatalf("Go SDK importBasePath was fabricated by the framework default: %s", goLang)
 	}
-	const want = "github.com/pulumi/pulumi-namespace/sdk/go/namespace"
+	const want = "github.com/pulumi-labs/pulumi-namespace/sdk/go/namespace"
 	if !strings.Contains(goLang, want) {
 		t.Errorf("Go SDK importBasePath = %s, want it to contain %q", goLang, want)
 	}

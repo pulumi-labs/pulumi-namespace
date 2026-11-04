@@ -2,23 +2,23 @@ package com.pulumi.example;
 
 import com.pulumi.Context;
 import com.pulumi.Pulumi;
-import com.pulumi.namespace.EgressPolicy;
-import com.pulumi.namespace.EgressPolicyArgs;
-import com.pulumi.namespace.GithubProfile;
-import com.pulumi.namespace.GithubProfileArgs;
-import com.pulumi.namespace.NamespaceFunctions;
-import com.pulumi.namespace.RegistryRepositoryPolicy;
-import com.pulumi.namespace.RegistryRepositoryPolicyArgs;
-import com.pulumi.namespace.RevokableToken;
-import com.pulumi.namespace.RevokableTokenArgs;
-import com.pulumi.namespace.TenantGroup;
-import com.pulumi.namespace.TenantGroupArgs;
-import com.pulumi.namespace.inputs.EgressMatcherArgs;
-import com.pulumi.namespace.inputs.GetRegistryRepositoriesArgs;
-import com.pulumi.namespace.inputs.EgressRuleArgs;
-import com.pulumi.namespace.inputs.ProfileInstanceShapeArgs;
-import com.pulumi.namespace.inputs.ProfileNetworkPolicyArgs;
-import com.pulumi.namespace.inputs.TokenGrantArgs;
+import com.pulumi.labs.namespace.EgressPolicy;
+import com.pulumi.labs.namespace.EgressPolicyArgs;
+import com.pulumi.labs.namespace.GithubProfile;
+import com.pulumi.labs.namespace.GithubProfileArgs;
+import com.pulumi.labs.namespace.NamespaceFunctions;
+import com.pulumi.labs.namespace.RegistryRepositoryPolicy;
+import com.pulumi.labs.namespace.RegistryRepositoryPolicyArgs;
+import com.pulumi.labs.namespace.RevokableToken;
+import com.pulumi.labs.namespace.RevokableTokenArgs;
+import com.pulumi.labs.namespace.TenantGroup;
+import com.pulumi.labs.namespace.TenantGroupArgs;
+import com.pulumi.labs.namespace.inputs.EgressMatcherArgs;
+import com.pulumi.labs.namespace.inputs.GetRegistryRepositoriesArgs;
+import com.pulumi.labs.namespace.inputs.EgressRuleArgs;
+import com.pulumi.labs.namespace.inputs.ProfileInstanceShapeArgs;
+import com.pulumi.labs.namespace.inputs.ProfileNetworkPolicyArgs;
+import com.pulumi.labs.namespace.inputs.TokenGrantArgs;
 
 public class App {
     public static void main(String[] args) {

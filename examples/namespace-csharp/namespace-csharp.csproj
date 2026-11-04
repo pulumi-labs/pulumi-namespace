@@ -6,6 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Pulumi" Version="3.*" />
-    <PackageReference Include="Pulumi.Namespace" Version="0.2.*" />
+    <PackageReference Include="Pulumi.Labs.Namespace" Version="0.2.*" />
   </ItemGroup>
 </Project>

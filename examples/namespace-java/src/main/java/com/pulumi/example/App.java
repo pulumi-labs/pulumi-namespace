@@ -2,15 +2,15 @@ package com.pulumi.example;
 
 import com.pulumi.Pulumi;
 import com.pulumi.core.Output;
-import com.pulumi.namespace.Instance;
-import com.pulumi.namespace.InstanceArgs;
-import com.pulumi.namespace.Tenant;
-import com.pulumi.namespace.TenantArgs;
-import com.pulumi.namespace.VaultObject;
-import com.pulumi.namespace.VaultObjectArgs;
-import com.pulumi.namespace.inputs.ContainerSpecArgs;
-import com.pulumi.namespace.inputs.ContainerPortSpecArgs;
-import com.pulumi.namespace.inputs.InstanceShapeArgs;
+import com.pulumi.labs.namespace.Instance;
+import com.pulumi.labs.namespace.InstanceArgs;
+import com.pulumi.labs.namespace.Tenant;
+import com.pulumi.labs.namespace.TenantArgs;
+import com.pulumi.labs.namespace.VaultObject;
+import com.pulumi.labs.namespace.VaultObjectArgs;
+import com.pulumi.labs.namespace.inputs.ContainerSpecArgs;
+import com.pulumi.labs.namespace.inputs.ContainerPortSpecArgs;
+import com.pulumi.labs.namespace.inputs.InstanceShapeArgs;
 
 import java.util.Map;
 

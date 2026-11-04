@@ -1,5 +1,5 @@
 import pulumi
-import pulumi_namespace as namespace
+import pulumi_labs_namespace as namespace
 
 # Block all egress from CI jobs except what the rules allow.
 egress = namespace.EgressPolicy(

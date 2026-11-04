@@ -13,7 +13,7 @@
 ### Changed
 
 - Updated the generated Namespace Cloud protobuf bindings (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) to the 2026-11-03 build (`v1.36.12-20261103090127-5e7839020ace.2`). Upstream removed the unused `SuspendInstanceRequest` and `WakeInstanceRequest` messages and added `EnsureBlueprintRequest` and `EnsureBlueprintResponse` (compute and private devbox APIs); the provider does not call any of them, so there are no resource or schema changes.
-- `go.mod`/`go.sum` moved from `provider/` to the provider's top level (module path is now `github.com/pulumi/autoregistry/lib/providers/namespace`); the Makefile builds from there. No change to the provider binary, schema or SDKs.
+- `go.mod`/`go.sum` moved from `provider/` to the provider's top level (the monorepo module path now ends in `lib/providers/namespace`); the Makefile builds from there. No change to the provider binary, schema or SDKs.
 
 ### Fixed
 

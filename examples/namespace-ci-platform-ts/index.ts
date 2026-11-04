@@ -1,4 +1,4 @@
-import * as namespace from "@pulumi/namespace";
+import * as namespace from "@pulumi-labs/namespace";
 
 // Block all egress from CI jobs except what the rules allow.
 const egress = new namespace.EgressPolicy("ci-egress", {

@@ -1,5 +1,5 @@
 import * as pulumi from "@pulumi/pulumi";
-import * as namespace from "@pulumi/namespace";
+import * as namespace from "@pulumi-labs/namespace";
 
 const config = new pulumi.Config();
 

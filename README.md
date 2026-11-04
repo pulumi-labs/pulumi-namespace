@@ -1,5 +1,8 @@
 # Namespace Cloud Pulumi Provider
 
+> [!NOTE]
+> **Experimental.** This provider is experimental, versions are `0.x`, and its API may change without notice.
+
 Manage [Namespace Cloud](https://namespace.so) as infrastructure with Pulumi, across TypeScript, Python, Go, C#, Java, and YAML.
 
 Namespace is fast, ephemeral compute built for CI runners, preview environments, and increasingly AI agent sandboxes: containers and VMs that start in seconds and clean themselves up at a deadline. It also ships a vault for secrets and an IAM layer of tenants. This provider lets you declare those pieces in code instead of clicking through the console or scripting `nsc`.
@@ -10,19 +13,19 @@ There is no Terraform provider for Namespace, so this is a native provider (pulu
 
 ```bash
 # TypeScript / JavaScript
-npm install @pulumi/namespace
+npm install @pulumi-labs/namespace
 
 # Python
-pip install pulumi-namespace
+pip install pulumi-labs-namespace
 
 # Go
-go get github.com/pulumi/pulumi-namespace/sdk/go/namespace
+go get github.com/pulumi-labs/pulumi-namespace/sdk/go/namespace
 
 # .NET
-dotnet add package Pulumi.Namespace
+dotnet add package Pulumi.Labs.Namespace
 
 # Java (Maven)
-# Add com.pulumi:namespace to your pom.xml
+# Add com.pulumi.labs:namespace to your pom.xml
 
 # YAML: no package install required
 ```

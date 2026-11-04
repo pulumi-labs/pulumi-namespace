@@ -1,6 +1,6 @@
 using Pulumi;
-using Pulumi.Namespace;
-using Pulumi.Namespace.Inputs;
+using Pulumi.Labs.Namespace;
+using Pulumi.Labs.Namespace.Inputs;
 using System.Collections.Generic;
 using System.Linq;
 

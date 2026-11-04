@@ -1,5 +1,5 @@
 import pulumi
-import pulumi_namespace as namespace
+import pulumi_labs_namespace as namespace
 
 config = pulumi.Config()
 

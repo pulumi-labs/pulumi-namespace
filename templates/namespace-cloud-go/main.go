@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/pulumi/pulumi-namespace/sdk/go/namespace"
+	"github.com/pulumi-labs/pulumi-namespace/sdk/go/namespace"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi"
 	"github.com/pulumi/pulumi/sdk/v3/go/pulumi/config"
 )
