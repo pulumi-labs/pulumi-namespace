@@ -208,13 +208,28 @@ func (r *RevokableToken) Read(
 	if err != nil {
 		return resp{}, fmt.Errorf("read revokable token %q: %w", req.ID, err)
 	}
-	if t == nil || t.GetState() == iamv1.RevokableToken_REVOKED {
-		return resp{}, nil // revoked tokens are unusable: report gone so it is recreated
+	if t == nil || t.GetState() == iamv1.RevokableToken_REVOKED || t.GetState() == iamv1.RevokableToken_EXPIRED {
+		// Revoked and expired tokens are unusable: report gone so the token is
+		// recreated instead of lingering in state as healthy.
+		return resp{}, nil
 	}
-	state := req.State // keeps the secret bearer token and declared inputs
-	if state.Name == "" {
-		state.Name = t.GetName()
-		state.Description = emptyToNil(t.GetDescription())
+	state := req.State // keeps the secret bearer token and the inputs it cannot read back (policies, expiresAt)
+	state.Name = t.GetName()
+	if state.Description != nil || t.GetDescription() != "" {
+		state.Description = ptr(t.GetDescription())
+	}
+	// scope defaults to TENANT_SCOPE server-side: only report it when declared,
+	// so the default does not become a declared value.
+	if state.Scope != nil && t.GetScope() != iamv1.RevokableToken_SCOPE_UNKNOWN {
+		state.Scope = ptr(t.GetScope().String())
+	}
+	if len(state.Grants) > 0 {
+		grants := make([]TokenGrant, 0, len(t.GetPermissions()))
+		for _, p := range t.GetPermissions() {
+			grants = append(grants, TokenGrant{ResourceType: p.GetResourceType(), ResourceID: p.GetResourceId(),
+				Actions: append([]string{}, p.GetActions()...)})
+		}
+		state.Grants = grants
 	}
 	applyToken(&state, t)
 	return resp{ID: req.ID, Inputs: state.RevokableTokenArgs, State: state}, nil

@@ -11,7 +11,7 @@ func TestReplaceOnChanges_NewResources(t *testing.T) {
 		"namespace:index:RegistryRepositoryPolicy": {"repository"},
 		"namespace:index:TenantGroup":              {"name"},
 		"namespace:index:RevokableToken":           {"name", "description", "expiresAt", "scope", "policies", "grants"},
-		"namespace:index:Blueprint":                {"name", "dockerfileContent", "aptBaseImage", "aptBaseBlueprint", "aptPackages"},
+		"namespace:index:Blueprint":                {"name"},
 	}
 	for tok, props := range cases {
 		res, ok := spec.Resources[tok]
@@ -40,6 +40,7 @@ func TestUpdatableInputs_NewResourcesAreNotReplaceOnChanges(t *testing.T) {
 		"namespace:index:RegistryDefaultPolicy":    {"defaultExpirationSeconds", "expirationEnforcement"},
 		"namespace:index:RegistryRepositoryPolicy": {"expirationSeconds", "expirationEnforcement"},
 		"namespace:index:TenantGroup":              {"policies"},
+		"namespace:index:Blueprint":                {"dockerfileContent", "aptBaseImage", "aptBaseBlueprint", "aptPackages"},
 		"namespace:index:RevokableToken":           {"refreshTrigger", "refreshMinimumSeconds"},
 	}
 	for tok, props := range cases {

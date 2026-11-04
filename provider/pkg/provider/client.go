@@ -27,7 +27,7 @@ import (
 // timestamps as RFC3339, field names in lowerCamelCase).
 // ---------------------------------------------------------------------------
 
-// Fully qualified RPC service names. TestServiceNamesExistInSchema verifies
+// Fully qualified RPC service names. TestRPCNamesExistInSchema verifies
 // each of these (and every method used below) against the generated
 // descriptors, so a rename upstream fails a test rather than a user's apply.
 const (
@@ -76,14 +76,16 @@ func isNotFound(err error) bool {
 // endpoints are the base URLs of the three API hosts. Region is only used to
 // derive the compute host when no explicit compute endpoint is configured.
 type endpoints struct {
-	Compute string // when set, used for every region (tests, private deployments)
+	Compute string // when set, used instead of the regional host; "{region}" is substituted (tests, private deployments)
 	IAM     string
 	Global  string
 }
 
 func (e endpoints) computeURL(region string) string {
 	if e.Compute != "" {
-		return strings.TrimRight(e.Compute, "/")
+		// A "{region}" placeholder in an explicit endpoint is replaced with the
+		// region, so tests and private deployments can still route per region.
+		return strings.TrimRight(strings.ReplaceAll(e.Compute, "{region}", region), "/")
 	}
 	return fmt.Sprintf(computeHostTmpl, region)
 }

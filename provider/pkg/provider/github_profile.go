@@ -368,7 +368,18 @@ func (r *GithubProfile) Update(
 		var rb githubv1.RebuildProfileImageResponse
 		if err := c.call(ctx, c.endpoints.globalURL(), githubProfileService, "RebuildProfileImage",
 			&githubv1.RebuildProfileImageRequest{ProfileId: req.ID}, &rb); err != nil {
-			return infer.UpdateResponse[GithubProfileState]{}, fmt.Errorf("rebuild image of github profile %q: %w", req.ID, err)
+			// UpdateProfile already succeeded (and bumped the version), so record
+			// that, but keep the previous rebuildTrigger in state so the next up
+			// sees the trigger change and retries the rebuild.
+			rerr := fmt.Errorf("rebuild image of github profile %q: %w", req.ID, err)
+			if profile != nil {
+				if aerr := applyProfile(&state, profile, &req.Inputs); aerr == nil {
+					state.RebuildTrigger = req.State.RebuildTrigger
+					return infer.UpdateResponse[GithubProfileState]{Output: state},
+						infer.ResourceInitFailedError{Reasons: []string{rerr.Error()}}
+				}
+			}
+			return infer.UpdateResponse[GithubProfileState]{}, rerr
 		}
 		if profile != nil && rb.GetStatus() != nil {
 			profile.Status = rb.GetStatus()

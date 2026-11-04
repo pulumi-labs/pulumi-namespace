@@ -54,7 +54,8 @@ func (c *ProviderConfig) Annotate(a infer.Annotator) {
 		"Falls back to the NSC_TOKEN environment variable.")
 	a.Describe(&c.Region, "Region for compute resources, such as 'us' or 'eu'. Selects the "+
 		"{region}.compute.namespaceapis.com endpoint. Defaults to 'us'. Falls back to the NSC_REGION environment variable.")
-	a.Describe(&c.ComputeEndpoint, "Full base URL of the compute API, used for every region. "+
+	a.Describe(&c.ComputeEndpoint, "Full base URL of the compute API. A '{region}' placeholder is replaced with the region; "+
+		"without one the URL is used for every region. "+
 		"Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.")
 	a.Describe(&c.IamEndpoint, "Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.")
 	a.Describe(&c.GlobalEndpoint, "Full base URL of the global API (vault, registry, egress policy). "+

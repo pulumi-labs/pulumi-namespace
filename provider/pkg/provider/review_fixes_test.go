@@ -115,12 +115,11 @@ func TestBlueprint_DiffReplacesDeleteFirst(t *testing.T) {
 	same := diff(old)
 	assert.False(t, same.HasChanges)
 
-	// Same name, new content: the create would upsert the same name, so the old
-	// resource must be deleted first or its delete would remove the new blueprint.
+	// Same name, new content: CreateBlueprint upserts by name, so this is an
+	// in-place update, never a delete-then-create that leaves a gap.
 	changed := diff(pm(map[string]any{"name": "bp", "dockerfileContent": "FROM debian"}))
 	assert.True(t, changed.HasChanges)
-	assert.True(t, changed.DeleteBeforeReplace, "name-keyed replace must delete before create")
-	assert.Equal(t, pgp.UpdateReplace, changed.DetailedDiff["dockerfileContent"].Kind)
+	assert.Equal(t, pgp.Update, changed.DetailedDiff["dockerfileContent"].Kind)
 
 	renamed := diff(pm(map[string]any{"name": "bp2", "dockerfileContent": "FROM alpine"}))
 	assert.True(t, renamed.DeleteBeforeReplace)
@@ -165,7 +164,10 @@ func TestInstance_ImportPopulatesDeadlineAndRefusesContainers(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "2030-01-01T00:00:00Z", str(read.Inputs, "deadline"))
 	assert.Equal(t, "ci", str(read.Inputs, "documentedPurpose"))
-	assert.Equal(t, "eu", str(read.Inputs, "region"))
+	// The region input stays unset on import (a program relying on the provider
+	// region must not see a replacement); effectiveRegion pins it instead.
+	assert.Equal(t, "", str(read.Inputs, "region"))
+	assert.Equal(t, "eu", str(read.Properties, "effectiveRegion"))
 
 	f.ok(computeSvc+"DescribeInstance",
 		`{"metadata":{"instanceId":"inst-1","status":"RUNNING","shape":{"virtualCpu":2,"memoryMegabytes":4096}},`+

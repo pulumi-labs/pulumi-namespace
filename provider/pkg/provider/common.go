@@ -14,7 +14,7 @@ import (
 )
 
 // Fully qualified RPC service names added after the first release. Each is
-// verified against the generated descriptors by TestServiceNamesExistInSchema.
+// verified against the generated descriptors by TestRPCNamesExistInSchema.
 const (
 	githubProfileService  = "namespace.cloud.github.v1beta.ProfileService"
 	githubJobsService     = "namespace.cloud.github.v1beta.JobsService"

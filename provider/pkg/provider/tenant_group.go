@@ -121,10 +121,14 @@ func (r *TenantGroup) Create(
 	if err := ensureGroup(ctx, c, req.Inputs); err != nil {
 		return infer.CreateResponse[TenantGroupState]{}, fmt.Errorf("ensure tenant group %q: %w", req.Inputs.Name, err)
 	}
-	if d, err := describeGroup(ctx, c, req.Inputs.Name); err == nil {
-		if err := applyGroup(&state, d, &req.Inputs); err != nil {
-			return infer.CreateResponse[TenantGroupState]{}, err
-		}
+	// The group exists now: a failing read-back must not orphan it.
+	d, err := describeGroup(ctx, c, req.Inputs.Name)
+	if err == nil {
+		err = applyGroup(&state, d, &req.Inputs)
+	}
+	if err != nil {
+		return infer.CreateResponse[TenantGroupState]{ID: req.Inputs.Name, Output: state},
+			infer.ResourceInitFailedError{Reasons: []string{fmt.Sprintf("read back tenant group %q: %v", req.Inputs.Name, err)}}
 	}
 	return infer.CreateResponse[TenantGroupState]{ID: req.Inputs.Name, Output: state}, nil
 }
@@ -172,10 +176,13 @@ func (r *TenantGroup) Update(
 	if err := ensureGroup(ctx, c, req.Inputs); err != nil {
 		return infer.UpdateResponse[TenantGroupState]{}, fmt.Errorf("update tenant group %q: %w", req.ID, err)
 	}
-	if d, err := describeGroup(ctx, c, req.ID); err == nil {
-		if err := applyGroup(&state, d, &req.Inputs); err != nil {
-			return infer.UpdateResponse[TenantGroupState]{}, err
-		}
+	d, err := describeGroup(ctx, c, req.ID)
+	if err == nil {
+		err = applyGroup(&state, d, &req.Inputs)
+	}
+	if err != nil {
+		return infer.UpdateResponse[TenantGroupState]{Output: state},
+			infer.ResourceInitFailedError{Reasons: []string{fmt.Sprintf("read back tenant group %q: %v", req.ID, err)}}
 	}
 	return infer.UpdateResponse[TenantGroupState]{Output: state}, nil
 }

@@ -35,10 +35,10 @@ func diffSuites() []diffSuite {
 				"aptBaseBlueprint": "other", "aptPackages": []any{"curl"}},
 			state: map[string]any{"blueprintId": "b-1", "createdAt": "", "imageRef": "", "buildError": ""},
 			changes: []diffCase{
-				{"name", "bp2", true}, {"dockerfileContent", "FROM debian", true}, {"dockerfileContent", nil, true},
-				{"aptBaseImage", "ubuntu:22.04", true}, {"aptBaseImage", nil, true},
-				{"aptBaseBlueprint", "other2", true}, {"aptBaseBlueprint", nil, true},
-				{"aptPackages", []any{"git"}, true}, {"aptPackages", nil, true},
+				{"name", "bp2", true}, {"dockerfileContent", "FROM debian", false}, {"dockerfileContent", nil, false},
+				{"aptBaseImage", "ubuntu:22.04", false}, {"aptBaseImage", nil, false},
+				{"aptBaseBlueprint", "other2", false}, {"aptBaseBlueprint", nil, false},
+				{"aptPackages", []any{"git"}, false}, {"aptPackages", nil, false},
 			},
 		},
 		{

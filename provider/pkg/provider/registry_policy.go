@@ -209,14 +209,17 @@ func (r *RegistryDefaultPolicy) Create(
 	if err := putDefaultPolicy(ctx, c, prior.merge(req.Inputs.DefaultExpirationSeconds, req.Inputs.ExpirationEnforcement)); err != nil {
 		return infer.CreateResponse[RegistryDefaultPolicyState]{}, fmt.Errorf("update registry default policy: %w", err)
 	}
-	cur, err := getDefaultPolicy(ctx, c)
-	if err != nil {
-		return infer.CreateResponse[RegistryDefaultPolicyState]{}, fmt.Errorf("read registry default policy: %w", err)
-	}
-	state.Revision = int(cur.Revision)
+	// The policy has been overwritten: record the prior values before anything
+	// else can fail, or destroy could never restore them.
 	state.PriorExpirationSeconds = prior.Seconds
 	state.PriorExpirationEnforcement = prior.Enforcement
 	state.PriorRecorded = true
+	cur, err := getDefaultPolicy(ctx, c)
+	if err != nil {
+		return infer.CreateResponse[RegistryDefaultPolicyState]{ID: "default", Output: state},
+			infer.ResourceInitFailedError{Reasons: []string{fmt.Sprintf("read back registry default policy: %v", err)}}
+	}
+	state.Revision = int(cur.Revision)
 	return infer.CreateResponse[RegistryDefaultPolicyState]{ID: "default", Output: state}, nil
 }
 
@@ -237,7 +240,11 @@ func (r *RegistryDefaultPolicy) Read(
 	}
 	state := req.State
 	args := RegistryDefaultPolicyArgs{DefaultExpirationSeconds: cur.Seconds, ExpirationEnforcement: cur.Enforcement}
-	if req.ID == "default" && (req.Inputs.DefaultExpirationSeconds != nil || req.Inputs.ExpirationEnforcement != nil) {
+	// On import there is neither a declared input nor a recorded prior: report
+	// the server values. On refresh keep only what the program declared, so a
+	// server value for an undeclared field never becomes an input.
+	imported := !req.State.PriorRecorded && req.Inputs.DefaultExpirationSeconds == nil && req.Inputs.ExpirationEnforcement == nil
+	if req.ID == "default" && !imported {
 		keepDeclared(req.Inputs, &args)
 	}
 	state.RegistryDefaultPolicyArgs = args
@@ -375,14 +382,15 @@ func (r *RegistryRepositoryPolicy) Create(
 	if err := putRepoPolicy(ctx, c, repo, prior.merge(req.Inputs.ExpirationSeconds, req.Inputs.ExpirationEnforcement)); err != nil {
 		return infer.CreateResponse[RegistryRepositoryPolicyState]{}, fmt.Errorf("update policy of repository %q: %w", repo, err)
 	}
-	cur, err := getRepoPolicy(ctx, c, repo)
-	if err != nil {
-		return infer.CreateResponse[RegistryRepositoryPolicyState]{}, fmt.Errorf("read policy of repository %q: %w", repo, err)
-	}
-	state.Revision = int(cur.Revision)
 	state.PriorExpirationSeconds = prior.Seconds
 	state.PriorExpirationEnforcement = prior.Enforcement
 	state.PriorRecorded = true
+	cur, err := getRepoPolicy(ctx, c, repo)
+	if err != nil {
+		return infer.CreateResponse[RegistryRepositoryPolicyState]{ID: repo, Output: state},
+			infer.ResourceInitFailedError{Reasons: []string{fmt.Sprintf("read back policy of repository %q: %v", repo, err)}}
+	}
+	state.Revision = int(cur.Revision)
 	return infer.CreateResponse[RegistryRepositoryPolicyState]{ID: repo, Output: state}, nil
 }
 

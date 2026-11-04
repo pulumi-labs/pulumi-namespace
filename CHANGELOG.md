@@ -9,6 +9,15 @@
 
 ### Fixed
 
+- `VaultObject`, `Tenant` and `Instance`: refreshing a resource declared without `labels` no longer copies labels the platform attaches itself into the inputs. Because `labels` replaces on `VaultObject` and `Instance`, the next `pulumi up` would have replaced them. Only import reports the server's full label set.
+- `Instance` records the region it was created in as the new `effectiveRegion` output and uses it for refresh, extend and destroy. Previously a changed provider region or `NSC_REGION` made refresh drop the instance from state and destroy skip the real, still-billed instance. Import no longer sets the `region` input (it used to, which made a program relying on the provider region plan a replacement).
+- `Instance` refresh now reports drift in `shape`, `documentedPurpose` and `deadline` instead of echoing state; server-filled defaults of unset inputs (machine arch, OS) never overwrite your input. An instance with no services no longer fails to decode on the next refresh or update.
+- `RevokableToken`: an `EXPIRED` token is now treated as gone on refresh (the README always said so) and is recreated; refresh reports drift in `name`, `description`, `scope` (when declared) and `grants`.
+- `Blueprint`: refresh reports drift in the whole spec, and a spec change now updates in place by re-calling `CreateBlueprint` (an upsert by name) instead of deleting the blueprint first and creating it again. **BREAKING:** `dockerfileContent`, `aptBaseImage`, `aptBaseBlueprint` and `aptPackages` no longer carry `replaceOnChanges`; changing them is an update, only `name` replaces.
+- `TenantGroup`, `GithubProfile`, `RegistryDefaultPolicy`, `RegistryRepositoryPolicy` and `BuildkiteQueue` no longer orphan or lose track of a changed object when a step after the change fails: a failing read-back after `EnsureTenantGroup`, a failing `RebuildProfileImage` after `UpdateProfile` (the old `rebuildTrigger` stays in state so the next up retries), a failing read-back after the registry policy or queue settings were overwritten (the prior values stay recorded so destroy can restore them) now report an initialization failure with the ID and partial state.
+- `RegistryDefaultPolicy` refresh no longer copies a server value into an input the program does not declare.
+- The RPC name guard referenced in the code comments now exists (`TestRPCNamesExistInSchema`).
+- The `computeEndpoint` provider setting accepts a `{region}` placeholder (replaced with the region); without one it behaves as before.
 - Provider config environment variable fallbacks now work: `namespace:token` and `namespace:region` are filled from `NSC_TOKEN` and `NSC_REGION` when unset. The fallbacks were previously declared as struct tags, which the provider framework ignores.
 
 ### Changed

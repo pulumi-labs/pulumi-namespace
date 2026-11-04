@@ -19,12 +19,12 @@ type Blueprint struct{}
 type BlueprintArgs struct {
 	Name string `pulumi:"name" provider:"replaceOnChanges"`
 	// DockerfileContent builds the image from an inline Dockerfile.
-	DockerfileContent *string `pulumi:"dockerfileContent,optional" provider:"replaceOnChanges"`
+	DockerfileContent *string `pulumi:"dockerfileContent,optional"`
 	// AptBaseImage is the base image reference of an apt-based blueprint.
-	AptBaseImage *string `pulumi:"aptBaseImage,optional" provider:"replaceOnChanges"`
+	AptBaseImage *string `pulumi:"aptBaseImage,optional"`
 	// AptBaseBlueprint is the name of another blueprint used as the base.
-	AptBaseBlueprint *string  `pulumi:"aptBaseBlueprint,optional" provider:"replaceOnChanges"`
-	AptPackages      []string `pulumi:"aptPackages,optional" provider:"replaceOnChanges"`
+	AptBaseBlueprint *string  `pulumi:"aptBaseBlueprint,optional"`
+	AptPackages      []string `pulumi:"aptPackages,optional"`
 }
 
 type BlueprintState struct {
@@ -38,7 +38,8 @@ type BlueprintState struct {
 
 func (r *Blueprint) Annotate(a infer.Annotator) {
 	a.Describe(&r, "A Namespace image blueprint: a named base image defined either by an inline Dockerfile or by a "+
-		"base image plus apt packages. A blueprint is immutable, so changing any input replaces it. "+
+		"base image plus apt packages. Changing the spec updates the blueprint in place (CreateBlueprint upserts by "+
+		"name, so the blueprint never disappears while it is rebuilt); changing the name replaces it. "+
 		"Import with the blueprint name.")
 }
 
@@ -57,12 +58,12 @@ func (s *BlueprintState) Annotate(ann infer.Annotator) {
 	ann.Describe(&s.BuildError, "Last build error, if any.")
 }
 
-// Diff makes every change a replacement (per the replaceOnChanges tags) that deletes the old blueprint first.
-// A blueprint is identified by its name (the resource ID), and CreateBlueprint
-// is keyed by that name. Under the default create-before-delete order a
-// content change keeps the name, so the replacement's create would upsert the
-// blueprint and the follow-up delete of the "old" resource, which has the same
-// name, would remove the one just built. Delete-before-replace avoids that.
+// Diff updates spec changes in place and replaces the blueprint when its name
+// changes (per the replaceOnChanges tag), deleting the old one first. A
+// blueprint is identified by its name (the resource ID), and CreateBlueprint is
+// keyed by that name, so under the default create-before-delete order a forced
+// replace would upsert the blueprint and the follow-up delete of the "old"
+// resource, which has the same name, would remove the one just built.
 func (r *Blueprint) Diff(
 	_ context.Context, req infer.DiffRequest[BlueprintArgs, BlueprintState],
 ) (infer.DiffResponse, error) {
@@ -107,6 +108,20 @@ func applyBlueprint(state *BlueprintState, b *imagev1.ImageBlueprint) {
 	state.BuildError = b.GetStatus().GetError()
 }
 
+// upsertBlueprint calls CreateBlueprint, which creates or overwrites the
+// blueprint with this name.
+func upsertBlueprint(ctx context.Context, c *nsClient, in BlueprintArgs) (*imagev1.ImageBlueprint, error) {
+	var pb imagev1.CreateBlueprintRequest
+	if err := toProto(map[string]any{"blueprintName": in.Name, "spec": blueprintSpecBody(in)}, &pb); err != nil {
+		return nil, err
+	}
+	var res imagev1.CreateBlueprintResponse
+	if err := c.call(ctx, c.endpoints.globalURL(), imageService, "CreateBlueprint", &pb, &res); err != nil {
+		return nil, err
+	}
+	return res.GetBlueprint(), nil
+}
+
 func (r *Blueprint) Create(
 	ctx context.Context, req infer.CreateRequest[BlueprintArgs],
 ) (infer.CreateResponse[BlueprintState], error) {
@@ -118,16 +133,32 @@ func (r *Blueprint) Create(
 	if err != nil {
 		return infer.CreateResponse[BlueprintState]{}, err
 	}
-	var pb imagev1.CreateBlueprintRequest
-	if err := toProto(map[string]any{"blueprintName": req.Inputs.Name, "spec": blueprintSpecBody(req.Inputs)}, &pb); err != nil {
-		return infer.CreateResponse[BlueprintState]{}, fmt.Errorf("create blueprint: %w", err)
-	}
-	var res imagev1.CreateBlueprintResponse
-	if err := c.call(ctx, c.endpoints.globalURL(), imageService, "CreateBlueprint", &pb, &res); err != nil {
+	b, err := upsertBlueprint(ctx, c, req.Inputs)
+	if err != nil {
 		return infer.CreateResponse[BlueprintState]{}, fmt.Errorf("create blueprint %q: %w", req.Inputs.Name, err)
 	}
-	applyBlueprint(&state, res.GetBlueprint())
+	applyBlueprint(&state, b)
 	return infer.CreateResponse[BlueprintState]{ID: req.Inputs.Name, Output: state}, nil
+}
+
+func (r *Blueprint) Update(
+	ctx context.Context, req infer.UpdateRequest[BlueprintArgs, BlueprintState],
+) (infer.UpdateResponse[BlueprintState], error) {
+	state := req.State
+	state.BlueprintArgs = req.Inputs
+	if req.DryRun {
+		return infer.UpdateResponse[BlueprintState]{Output: state}, nil
+	}
+	c, err := clientFor(ctx, nil)
+	if err != nil {
+		return infer.UpdateResponse[BlueprintState]{}, err
+	}
+	b, err := upsertBlueprint(ctx, c, req.Inputs)
+	if err != nil {
+		return infer.UpdateResponse[BlueprintState]{}, fmt.Errorf("update blueprint %q: %w", req.ID, err)
+	}
+	applyBlueprint(&state, b)
+	return infer.UpdateResponse[BlueprintState]{Output: state}, nil
 }
 
 func fetchBlueprint(ctx context.Context, c *nsClient, name string) (*imagev1.ImageBlueprint, error) {
@@ -155,13 +186,18 @@ func (r *Blueprint) Read(
 		return resp{}, fmt.Errorf("read blueprint %q: %w", req.ID, err)
 	}
 	state := req.State
-	if state.Name == "" { // import: derive the inputs from the server spec
-		state.Name = req.ID
-		if d := b.GetSpec().GetDockerfile(); d != nil {
+	state.Name = req.ID
+	if spec := b.GetSpec(); spec != nil {
+		// Refresh the whole spec from the server, so drift shows and import
+		// derives the inputs.
+		state.DockerfileContent, state.AptBaseImage, state.AptBaseBlueprint, state.AptPackages = nil, nil, nil, nil
+		if d := spec.GetDockerfile(); d != nil {
 			state.DockerfileContent = ptr(d.GetContent())
 		}
-		if a := b.GetSpec().GetAptBasedImage(); a != nil {
-			state.AptPackages = a.GetAptPackages()
+		if a := spec.GetAptBasedImage(); a != nil {
+			if pk := a.GetAptPackages(); len(pk) > 0 {
+				state.AptPackages = pk
+			}
 			if v := a.GetBaseImage().GetImageRef(); v != "" {
 				state.AptBaseImage = ptr(v)
 			}

@@ -41,16 +41,23 @@ func labelsFromProto(ls []*stdlib.Label) map[string]string {
 
 // labelsView reconciles the labels the server reports with what the user
 // declared. The server may attach system labels the user never asked for, and
-// reporting those back would show as a perpetual diff. When the user declared
-// labels (prior != nil) only those keys are reported, so a removed or changed
-// label still surfaces as drift. When there is no prior (import) the server's
-// full set is returned.
-func labelsView(prior, server map[string]string) map[string]string {
-	if prior == nil {
+// reporting those back as inputs would turn them into a perpetual diff (or,
+// where labels are replace-on-change, a replacement on the next up).
+//
+// import is true only when Read runs with an empty state (pulumi import): the
+// server's full label set then becomes the inputs. On an ordinary refresh the
+// inputs only ever carry the keys the user declared (prior), so a removed or
+// changed declared label still surfaces as drift while undeclared server
+// labels are ignored. A refresh with no declared labels reports none.
+func labelsView(prior, server map[string]string, imported bool) map[string]string {
+	if imported {
 		if len(server) == 0 {
 			return nil
 		}
 		return server
+	}
+	if len(prior) == 0 {
+		return nil
 	}
 	out := make(map[string]string, len(prior))
 	for k := range prior {

@@ -116,7 +116,7 @@ func (r *VaultObject) Read(
 
 	state := req.State
 	state.Description = emptyToNil(md.GetDescription())
-	state.Labels = labelsView(req.State.Labels, labelsFromProto(md.GetLabels()))
+	state.Labels = labelsView(req.State.Labels, labelsFromProto(md.GetLabels()), req.State.ObjectID == "")
 	// The API only returns the value of revealable objects. For everything else
 	// keep the value already in state: overwriting it with "" would show a
 	// permanent diff and could blank the secret on the next update.

@@ -133,6 +133,20 @@ type InstanceState struct {
 	IngressDomain string `pulumi:"ingressDomain"`
 	// Services lists the endpoints exposed by the instance.
 	Services []InstanceServiceState `pulumi:"services"`
+	// EffectiveRegion is the region the instance was created in. Read, Update
+	// and Delete talk to this region, so changing the provider region or
+	// NSC_REGION later cannot orphan the instance.
+	EffectiveRegion *string `pulumi:"effectiveRegion,optional"`
+}
+
+// regionForState is the region Read, Update and Delete must talk to: the one
+// recorded at creation, then the declared region (state written before
+// effectiveRegion existed), then the provider default.
+func regionForState(s InstanceState) *string {
+	if s.EffectiveRegion != nil && *s.EffectiveRegion != "" {
+		return s.EffectiveRegion
+	}
+	return s.Region
 }
 
 func (r *Instance) Annotate(a infer.Annotator) {
@@ -161,6 +175,8 @@ func (s *InstanceState) Annotate(ann infer.Annotator) {
 	ann.Describe(&s.InstanceURL, "Dashboard URL of the instance.")
 	ann.Describe(&s.IngressDomain, "Domain under which exported ports are served.")
 	ann.Describe(&s.Services, "Service endpoints reported by the instance.")
+	ann.Describe(&s.EffectiveRegion, "The region the instance actually runs in (the resource region, else the provider "+
+		"region at creation time). Later operations always use this region.")
 }
 
 // Timing knobs for readiness polling. Variables so tests can shorten them.
@@ -252,6 +268,7 @@ func (r *Instance) Create(
 	if err != nil {
 		return infer.CreateResponse[InstanceState]{}, err
 	}
+	state.EffectiveRegion = ptr(c.region)
 	var res computev1.DescribeInstanceResponse
 	if err := c.call(ctx, c.endpoints.computeURL(c.region), computeService, "CreateInstance", apiReq, &res); err != nil {
 		return infer.CreateResponse[InstanceState]{}, fmt.Errorf("create instance: %w", err)
@@ -321,31 +338,47 @@ func (r *Instance) Read(
 	ctx context.Context,
 	req infer.ReadRequest[InstanceArgs, InstanceState],
 ) (infer.ReadResponse[InstanceArgs, InstanceState], error) {
-	c, err := clientFor(ctx, req.State.Region)
+	type resp = infer.ReadResponse[InstanceArgs, InstanceState]
+	imported := req.State.InstanceID == ""
+	c, err := clientFor(ctx, regionForState(req.State))
 	if err != nil {
-		return infer.ReadResponse[InstanceArgs, InstanceState]{}, err
+		return resp{}, err
 	}
 	var res computev1.DescribeInstanceResponse
 	err = c.call(ctx, c.endpoints.computeURL(c.region), computeService, "DescribeInstance",
 		&computev1.DescribeInstanceRequest{InstanceId: req.ID}, &res)
 	if err != nil {
 		if isNotFound(err) {
-			return infer.ReadResponse[InstanceArgs, InstanceState]{}, nil
+			return resp{}, nil
 		}
-		return infer.ReadResponse[InstanceArgs, InstanceState]{}, fmt.Errorf("read instance %q: %w", req.ID, err)
+		return resp{}, fmt.Errorf("read instance %q: %w", req.ID, err)
 	}
 	md := res.GetMetadata()
 	if md.GetStatus() == computev1.InstanceMetadata_DESTROYED || md.GetDestroyedAt() != nil {
 		// Deadline reached or destroyed out of band: the resource is gone.
-		return infer.ReadResponse[InstanceArgs, InstanceState]{}, nil
+		return resp{}, nil
 	}
 	state := req.State
-	if state.Region == nil && c.region != "" && req.State.InstanceID == "" {
-		// Import: remember the region the instance was read from.
-		state.Region = ptr(c.region)
+	if state.EffectiveRegion == nil || *state.EffectiveRegion == "" {
+		// Import, or state written before effectiveRegion existed: remember
+		// the region the instance was read from.
+		state.EffectiveRegion = ptr(c.region)
 	}
-	if req.State.InstanceID == "" {
-		// Import: reconstruct what the API reports.
+	if imported {
+		// Import: reconstruct what the API reports. The region input stays
+		// unset so a program that relies on the provider region does not see
+		// a replacement; effectiveRegion pins the region instead.
+		if len(res.GetContainers()) > 0 {
+			// DescribeInstance reports only container ids, names and ports, not the
+			// image, args, entrypoint or env. A state without them would diff
+			// against the program and replace the instance on the next up, so
+			// refuse rather than import something that is wrong by construction.
+			return resp{}, fmt.Errorf(
+				"import instance %q: it runs %d container(s) and the API does not report their image, args, "+
+					"entrypoint or env, so the imported state would be incomplete and the next update would "+
+					"replace the instance; import is only supported for instances without containers",
+				req.ID, len(res.GetContainers()))
+		}
 		state.Shape = InstanceShape{
 			VirtualCPU:      int(md.GetShape().GetVirtualCpu()),
 			MemoryMegabytes: int(md.GetShape().GetMemoryMegabytes()),
@@ -353,24 +386,35 @@ func (r *Instance) Read(
 			OS:              emptyToNil(md.GetShape().GetOs()),
 		}
 		state.DocumentedPurpose = emptyToNil(md.GetDocumentedPurpose())
-		state.Labels = labelsView(nil, labelsFromProto(md.GetLabels()))
 		state.Deadline = emptyToNil(formatTimestamp(md.GetDeadline()))
-		if len(res.GetContainers()) > 0 {
-			// DescribeInstance reports only container ids, names and ports, not the
-			// image, args, entrypoint or env. A state without them would diff
-			// against the program and replace the instance on the next up, so
-			// refuse rather than import something that is wrong by construction.
-			return infer.ReadResponse[InstanceArgs, InstanceState]{}, fmt.Errorf(
-				"import instance %q: it runs %d container(s) and the API does not report their image, args, "+
-					"entrypoint or env, so the imported state would be incomplete and the next update would "+
-					"replace the instance; import is only supported for instances without containers",
-				req.ID, len(res.GetContainers()))
-		}
+		state.Labels = labelsView(nil, labelsFromProto(md.GetLabels()), true)
 	} else {
-		state.Labels = labelsView(req.State.Labels, labelsFromProto(md.GetLabels()))
+		// Refresh: report drift in everything the API reports, but never turn a
+		// server-filled default of an optional input into a declared value.
+		state.Shape.VirtualCPU = int(md.GetShape().GetVirtualCpu())
+		state.Shape.MemoryMegabytes = int(md.GetShape().GetMemoryMegabytes())
+		if state.Shape.MachineArch != nil {
+			state.Shape.MachineArch = ptr(md.GetShape().GetMachineArch())
+		}
+		if state.Shape.OS != nil {
+			state.Shape.OS = ptr(md.GetShape().GetOs())
+		}
+		if state.DocumentedPurpose != nil || md.GetDocumentedPurpose() != "" {
+			state.DocumentedPurpose = ptr(md.GetDocumentedPurpose())
+		}
+		if state.Deadline != nil {
+			// Keep the declared text while it denotes the enforced deadline, so
+			// formatting differences are not drift; a different server deadline is.
+			declared, perr := time.Parse(time.RFC3339, *state.Deadline)
+			enforced := md.GetDeadline().AsTime()
+			if md.GetDeadline() != nil && (perr != nil || declared.Sub(enforced).Abs() > time.Second) {
+				state.Deadline = ptr(formatTimestamp(md.GetDeadline()))
+			}
+		}
+		state.Labels = labelsView(req.State.Labels, labelsFromProto(md.GetLabels()), false)
 	}
 	applyInstance(&state, &res)
-	return infer.ReadResponse[InstanceArgs, InstanceState]{ID: req.ID, Inputs: state.InstanceArgs, State: state}, nil
+	return resp{ID: req.ID, Inputs: state.InstanceArgs, State: state}, nil
 }
 
 func errShortenDeadline(want, have time.Time) error {
@@ -404,7 +448,7 @@ func (r *Instance) Update(
 	if req.DryRun {
 		return infer.UpdateResponse[InstanceState]{Output: state}, nil
 	}
-	c, err := clientFor(ctx, req.State.Region)
+	c, err := clientFor(ctx, regionForState(req.State))
 	if err != nil {
 		return infer.UpdateResponse[InstanceState]{}, err
 	}
@@ -456,7 +500,7 @@ func (r *Instance) Delete(
 	ctx context.Context,
 	req infer.DeleteRequest[InstanceState],
 ) (infer.DeleteResponse, error) {
-	c, err := clientFor(ctx, req.State.Region)
+	c, err := clientFor(ctx, regionForState(req.State))
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
@@ -480,7 +524,9 @@ func applyInstance(state *InstanceState, res *computev1.DescribeInstanceResponse
 	state.Status = md.GetStatus().String()
 	state.InstanceURL = res.GetInstanceUrl()
 	state.IngressDomain = md.GetIngressDomain()
-	state.Services = state.Services[:0:0]
+	// Never nil: a nil slice is encoded as absent and then fails to decode as a
+	// required output on the next Read, Update or Delete.
+	state.Services = []InstanceServiceState{}
 	for _, s := range md.GetServices() {
 		state.Services = append(state.Services, InstanceServiceState{
 			Name:         s.GetName(),

@@ -156,7 +156,7 @@ func (r *Tenant) Read(
 	}
 	state := req.State
 	state.VisibleName = emptyToNil(t.GetVisibleName())
-	state.Labels = labelsView(req.State.Labels, labelsFromProto(t.GetLabels()))
+	state.Labels = labelsView(req.State.Labels, labelsFromProto(t.GetLabels()), req.State.TenantID == "")
 	if v := t.GetExternalAccountId(); v != "" {
 		state.ExternalAccountID = &v
 	}

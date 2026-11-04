@@ -295,11 +295,14 @@ func (r *BuildkiteQueue) Create(
 	if updated == nil || updated.GetId() == "" {
 		updated = match
 	}
-	if err := applyQueue(&state, updated, &req.Inputs); err != nil {
-		return infer.CreateResponse[BuildkiteQueueState]{}, err
-	}
+	// The queue's settings have been overwritten: record what to restore first.
 	state.PriorRecorded = true
 	state.PriorSettings = priorFrom(prior)
+	if err := applyQueue(&state, updated, &req.Inputs); err != nil {
+		state.QueueID = updated.GetId()
+		return infer.CreateResponse[BuildkiteQueueState]{ID: updated.GetId(), Output: state},
+			infer.ResourceInitFailedError{Reasons: []string{fmt.Sprintf("read back buildkite queue %q: %v", name, err)}}
+	}
 	return infer.CreateResponse[BuildkiteQueueState]{ID: state.QueueID, Output: state}, nil
 }
 

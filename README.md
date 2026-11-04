@@ -59,7 +59,7 @@ pulumi config set namespace:region eu
 |---|---|---|---|
 | `token` (secret) | `NSC_TOKEN` | none | Bearer token. |
 | `region` | `NSC_REGION` | `us` | Region for instances, used to build `{region}.compute.namespaceapis.com`. |
-| `computeEndpoint` | none | derived from `region` | Full base URL of the compute API. For tests and private deployments. |
+| `computeEndpoint` | none | derived from `region` | Full base URL of the compute API. A `{region}` placeholder is replaced with the region. For tests and private deployments. |
 | `iamEndpoint` | none | `https://iam.namespaceapis.com` | Full base URL of the IAM API. |
 | `globalEndpoint` | none | `https://global.namespaceapis.com` | Full base URL of the vault and other global services. |
 
@@ -94,7 +94,7 @@ An ephemeral container instance on Namespace compute. Instances are destroyed by
 | `region` | string | Overrides the provider region. Replaces on change. |
 | `deadline` | RFC 3339 string | The only in-place input. Moving it later calls ExtendInstance. Moving it earlier is rejected with an error, because the API can only extend. |
 
-Outputs: `instanceId`, `createdAt`, `readyAt`, `expiresAt`, `status`, `instanceUrl`, `ingressDomain`, `services` (name, status, endpointKind, endpoint).
+Outputs: `instanceId`, `createdAt`, `readyAt`, `expiresAt`, `status`, `instanceUrl`, `ingressDomain`, `services` (name, status, endpointKind, endpoint), `effectiveRegion`. `effectiveRegion` is the region the instance was created in (the `region` input, else the provider region at that time). Refresh and destroy always use it, so changing the provider region or `NSC_REGION` later cannot lose track of a running instance. Refresh reports drift in `shape`, `documentedPurpose`, `deadline` and `labels`; server-filled defaults (such as the machine architecture) and labels the platform adds itself are not copied into your inputs. Import (instance ID, no containers) works in the provider's current region.
 
 Create polls DescribeInstance every 2 seconds for up to 10 minutes until the instance is running. If the instance enters an error state the resource is still recorded so Pulumi can clean it up.
 
@@ -134,11 +134,11 @@ An IAM tenant group with policies. `name` replaces; `policies` update in place t
 
 ### `namespace:index:RevokableToken`
 
-A revokable bearer token. The `bearerToken` output is a Pulumi secret and is only returned by the API at creation, so it is preserved in state and never logged. Identity inputs (`name`, `description`, `expiresAt`, `scope`, `policies`, `grants`) replace. Changing `refreshTrigger` calls `RefreshRevokableToken` (optionally with `refreshMinimumSeconds`) to extend the expiry in place. Destroy revokes the token. A token that is revoked or expired is treated as gone on refresh. A token cannot be imported because its bearer value cannot be retrieved.
+A revokable bearer token. The `bearerToken` output is a Pulumi secret and is only returned by the API at creation, so it is preserved in state and never logged. Identity inputs (`name`, `description`, `expiresAt`, `scope`, `policies`, `grants`) replace. Changing `refreshTrigger` calls `RefreshRevokableToken` (optionally with `refreshMinimumSeconds`) to extend the expiry in place. Destroy revokes the token. A token that is revoked or expired is treated as gone on refresh, so the next up recreates it. Refresh also reports drift in `name`, `description`, `scope` (only when declared) and `grants`. A token cannot be imported because its bearer value cannot be retrieved.
 
 ### `namespace:index:Blueprint`
 
-A custom base image blueprint built from either `dockerfileContent` or an apt-based image (`aptBaseImage` or `aptBaseBlueprint`, plus `aptPackages`). Blueprints are immutable: all inputs replace. Outputs `blueprintId`, `createdAt`, `imageRef`, `buildError`. Import with the name.
+A custom base image blueprint built from either `dockerfileContent` or an apt-based image (`aptBaseImage` or `aptBaseBlueprint`, plus `aptPackages`). Changing the spec updates the blueprint in place by calling `CreateBlueprint` again, which creates a new version under the same name, so the blueprint never disappears while it is rebuilt; only changing `name` replaces it. Refresh reports drift in the whole spec. Outputs `blueprintId`, `createdAt`, `imageRef`, `buildError`. Import with the name.
 
 ## Functions
 
