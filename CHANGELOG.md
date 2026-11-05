@@ -2,8 +2,11 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-04
+
 ### Added
 
+- Add `qa.yaml`, the runtime test manifest QA reads: credentials, every resource and function with its test plan and cost, and the regressions to re-check. It is copied to the mirror root and changes no provider behavior.
 - Lookup functions so every resource type can be read without managing it: `getVaultObject`, `getTenant` (by tenant ID or external account ID), `getInstance`, `getGithubProfile` (by profile ID or tag), `getTenantGroup`, `getBlueprint`, `getEgressPolicy`, `getBuildkiteQueue` (by queue ID or name), `getRegistryDefaultPolicy`, `getRegistryRepositoryPolicy`, `getRevokableToken` (metadata only, never the bearer value), plus the list functions `getVaultObjects`, `getEgressPolicies`, `getBuildkiteQueues`, `getRevokableTokens`, `getSharedImages` and the read-only lookups `getTenantMembers` and `getTenantPolicies`. A lookup of an object that does not exist fails with `... was not found`.
 - New resource `SharedImage` (`ShareImage` / `UnshareImage`) with `getSharedImage` and `getSharedImages`: shares a registry image under a public or partner reference. Import with the shared image ID.
 - New resource `InstanceIngress` (`CreateIngress` / `DeleteIngress`) with `getInstanceIngress`: exposes an instance port on an Internet-facing name. Import with `instanceId/ingressId` (or `region/instanceId/ingressId`). Create sends one request and uses the single ingress the API returns even if the server normalised or suffixed the requested name; any other response is resolved by listing the instance's ingresses by name, and fails naming the instance when the ingress cannot be identified. The exact shape of the `CreateIngress` response is unverified against the live API.

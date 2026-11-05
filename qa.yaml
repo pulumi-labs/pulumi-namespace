@@ -1,0 +1,127 @@
+credentials:
+  - name: NSC_TOKEN
+    required: true
+  - name: NSC_REGION
+    required: false
+account: >-
+  A Namespace Cloud workspace with an NSC_TOKEN that can create instances, tenants, tenant groups, vault objects, revokable tokens, blueprints, egress policies and GitHub runner profiles. NSC_REGION is an optional region override. No Buildkite organization or pre-existing registry repository is available, which is why BuildkiteQueue and RegistryRepositoryPolicy are skipped. Nothing here has been run against the live API: the provider was only tested against an in-memory fake, so the update properties and token permissions are unverified live.
+resources:
+  - type: namespace:index:Blueprint
+    test: true
+    update: aptPackages
+    cost: "none (image build runs on Namespace; no billed compute known)"
+  - type: namespace:index:BuildkiteQueue
+    test: false
+    reason: "adopts settings of an existing Buildkite queue (the API cannot create queues), so it needs a connected Buildkite organization and queue the test account does not have"
+  - type: namespace:index:EgressPolicy
+    test: true
+    update: description
+    cost: "none"
+  - type: namespace:index:GithubProfile
+    test: true
+    update: description
+    cost: "none while idle; runner minutes are billed only if a workflow uses the profile"
+  - type: namespace:index:Instance
+    test: true
+    update: deadline
+    cost: "compute: billed per instance while running; keep the shape smallest and destroy within minutes"
+  - type: namespace:index:InstanceIngress
+    test: true
+    update: null
+    cost: "none beyond the parent instance (compute billed while it runs)"
+  - type: namespace:index:RegistryDefaultPolicy
+    test: true
+    update: defaultExpirationSeconds
+    cost: "none"
+  - type: namespace:index:RegistryRepositoryPolicy
+    test: false
+    reason: "adopts the policy of an existing registry repository; needs an image already pushed to the Namespace registry, which cannot be set up unattended"
+  - type: namespace:index:RevokableToken
+    test: true
+    update: refreshTrigger
+    cost: "none"
+  - type: namespace:index:SharedImage
+    test: false
+    reason: "publishes a registry image under a public or partner reference (external exposure) and needs a pre-pushed image digest"
+  - type: namespace:index:Tenant
+    test: true
+    update: visibleName
+    cost: "none"
+  - type: namespace:index:TenantGroup
+    test: true
+    update: policies
+    cost: "none"
+  - type: namespace:index:VaultObject
+    test: true
+    update: value
+    cost: "none"
+functions:
+  - name: getBlueprint
+    test: true
+  - name: getBlueprints
+    test: true
+  - name: getBuildkiteQueue
+    test: true
+  - name: getBuildkiteQueues
+    test: true
+  - name: getEgressPolicies
+    test: true
+  - name: getEgressPolicy
+    test: true
+  - name: getGithubJobs
+    test: true
+  - name: getGithubProfile
+    test: true
+  - name: getGithubProfiles
+    test: true
+  - name: getInstance
+    test: true
+  - name: getInstanceIngress
+    test: true
+  - name: getInstances
+    test: true
+  - name: getRegistryDefaultPolicy
+    test: true
+  - name: getRegistryImages
+    test: true
+  - name: getRegistryRepositories
+    test: true
+  - name: getRegistryRepositoryPolicy
+    test: true
+  - name: getRevokableToken
+    test: true
+  - name: getRevokableTokens
+    test: true
+  - name: getSharedImage
+    test: true
+  - name: getSharedImages
+    test: true
+  - name: getTenant
+    test: true
+  - name: getTenantGroup
+    test: true
+  - name: getTenantGroups
+    test: true
+  - name: getTenantMembers
+    test: true
+  - name: getTenantPolicies
+    test: true
+  - name: getTenants
+    test: true
+  - name: getUsage
+    test: true
+  - name: getVaultObject
+    test: true
+  - name: getVaultObjects
+    test: true
+  - name: getVolumes
+    test: true
+regressions:
+  - "Instance: refreshing a resource declared without labels must not copy platform-attached labels into inputs (no replacement on the next up)"
+  - "Instance: effectiveRegion output records the creation region and is used for refresh, extend and destroy"
+  - "Blueprint: a spec change (e.g. aptPackages) updates in place; only name replaces"
+  - "RevokableToken: an expired token reads as gone on refresh and is recreated"
+  - "Provider config falls back to NSC_TOKEN and NSC_REGION when namespace:token and namespace:region are unset"
+  - "GithubProfile: cacheVolumeSettings volumeTag is optional and ignored"
+notes: >-
+  Instance and InstanceIngress are the only billed objects; destroy ingress before its instance. EgressPolicy has no delete RPC, so destroy disables the policy and clears its rules. RegistryDefaultPolicy is an account-wide singleton that is adopted and restored on destroy, so do not run it concurrently with other runs on the same account. RevokableToken bearerToken is only returned at creation; Tenant and TenantGroup are account-level. getTenantMembers and getTenantPolicies are read-only. Lookups of missing objects fail with was not found.
