@@ -51,6 +51,7 @@ const (
 	defaultRegion   = "us"
 	iamHost         = "https://iam.namespaceapis.com"
 	globalHost      = "https://global.namespaceapis.com"
+	githubHost      = "https://private-api.global.namespaceapis.com"
 	computeHostTmpl = "https://%s.compute.namespaceapis.com"
 	userAgent       = "pulumi-namespace-autoregistry"
 	maxResponseSize = 32 << 20
@@ -116,6 +117,17 @@ func (e endpoints) globalURL() string {
 		return strings.TrimRight(e.Global, "/")
 	}
 	return globalHost
+}
+
+// githubURL is the host of the GitHub runner services (profiles, jobs). They are
+// not served by the public global host (it answers 404, #1569), so they have
+// their own default; an explicit global endpoint still overrides it, which is
+// how tests and private deployments route every global service to one place.
+func (e endpoints) githubURL() string {
+	if e.Global != "" {
+		return strings.TrimRight(e.Global, "/")
+	}
+	return githubHost
 }
 
 // nsClient is a minimal Connect-over-HTTP client for the Namespace Cloud API.

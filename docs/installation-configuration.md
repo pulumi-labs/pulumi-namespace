@@ -50,6 +50,6 @@ Explicit Pulumi config wins over the environment variable. The following keys ar
 | `region` | `NSC_REGION` | `us` | Region for instances, used to build `{region}.compute.namespaceapis.com`. |
 | `computeEndpoint` | none | derived from `region` | Full base URL of the compute API. A `{region}` placeholder is replaced with the region. For tests and private deployments. |
 | `iamEndpoint` | none | `https://iam.namespaceapis.com` | Full base URL of the IAM API. |
-| `globalEndpoint` | none | `https://global.namespaceapis.com` | Full base URL of the vault and other global services. |
+| `globalEndpoint` | none | `https://global.namespaceapis.com` (`https://private-api.global.namespaceapis.com` for the GitHub runner services) | Full base URL of the vault and other global services. Overrides both defaults. |
 
 An explicit `namespace` provider resource is only needed to target several accounts or regions in one program.

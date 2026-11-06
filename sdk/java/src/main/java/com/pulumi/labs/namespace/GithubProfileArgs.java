@@ -158,14 +158,14 @@ public final class GithubProfileArgs extends com.pulumi.resources.ResourceArgs {
     }
 
     /**
-     * Operating system of the runner, for example &#39;linux&#39;.
+     * Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not &#39;linux&#39;; that is what the platform reports in instanceShape.os).
      * 
      */
     @Import(name="os")
     private @Nullable Output<String> os;
 
     /**
-     * @return Operating system of the runner, for example &#39;linux&#39;.
+     * @return Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not &#39;linux&#39;; that is what the platform reports in instanceShape.os).
      * 
      */
     public Optional<Output<String>> os() {
@@ -463,7 +463,7 @@ public final class GithubProfileArgs extends com.pulumi.resources.ResourceArgs {
         }
 
         /**
-         * @param os Operating system of the runner, for example &#39;linux&#39;.
+         * @param os Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not &#39;linux&#39;; that is what the platform reports in instanceShape.os).
          * 
          * @return builder
          * 
@@ -474,7 +474,7 @@ public final class GithubProfileArgs extends com.pulumi.resources.ResourceArgs {
         }
 
         /**
-         * @param os Operating system of the runner, for example &#39;linux&#39;.
+         * @param os Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not &#39;linux&#39;; that is what the platform reports in instanceShape.os).
          * 
          * @return builder
          * 

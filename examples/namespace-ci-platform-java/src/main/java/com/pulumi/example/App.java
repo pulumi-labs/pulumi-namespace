@@ -42,7 +42,8 @@ public class App {
         // A GitHub runner profile that uses the egress policy.
         var profile = new GithubProfile("ci-runner", GithubProfileArgs.builder()
             .tag("ci-medium")
-            .instanceShape(ProfileInstanceShapeArgs.builder().virtualCpu(4).memoryMegabytes(8192).build())
+            .os("ubuntu-24.04")
+            .instanceShape(ProfileInstanceShapeArgs.builder().virtualCpu(4).memoryMegabytes(8192).machineArch("amd64").build())
             .networkPolicy(ProfileNetworkPolicyArgs.builder()
                 .egress("EGRESS_POLICY_TAG")
                 .egressPolicyTag(egress.tag())

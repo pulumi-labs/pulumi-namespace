@@ -117,6 +117,11 @@ functions:
   - name: getVolumes
     test: true
 regressions:
+  - "#1577 import then inspect the stack state (pulumi stack export --show-secrets off): every property the schema marks secret on an imported resource is a secret, never plaintext; a refresh of a resource created by the program keeps them secret"
+  - "#1570 GithubProfile without os or instanceShape.machineArch fails at preview naming the supported values, and an os that is not an ubuntu-* image (such as linux) is rejected; the examples declare both"
+  - "#1569 with default configuration (no endpoint overrides) GithubProfile and getGithubProfile, getGithubProfiles, getGithubJobs reach private-api.global.namespaceapis.com and succeed; the public global host answers 404 for these services"
+  - "#1571 Instance import leaves shape.machineArch and shape.os unset: after import, preview of the original program plans no change and never a replacement"
+  - "#1571 GithubProfile import does not copy builderMode NO_CACHING or instanceShape.os linux into inputs: preview of the original program plans no update"
   - "Instance: refreshing a resource declared without labels must not copy platform-attached labels into inputs (no replacement on the next up)"
   - "Instance: effectiveRegion output records the creation region and is used for refresh, extend and destroy"
   - "Blueprint: a spec change (e.g. aptPackages) updates in place; only name replaces"

@@ -11,7 +11,8 @@ const egress = new namespace.EgressPolicy("ci-egress", {
 // A GitHub runner profile that uses the egress policy.
 const profile = new namespace.GithubProfile("ci-runner", {
     tag: "ci-medium",
-    instanceShape: { virtualCpu: 4, memoryMegabytes: 8192 },
+    os: "ubuntu-24.04",
+    instanceShape: { virtualCpu: 4, memoryMegabytes: 8192, machineArch: "amd64" },
     networkPolicy: { egress: "EGRESS_POLICY_TAG", egressPolicyTag: egress.tag },
 });
 

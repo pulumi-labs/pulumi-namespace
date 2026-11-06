@@ -87,7 +87,7 @@ func (r *VaultObject) Create(
 	in := req.Inputs
 	state := VaultObjectState{VaultObjectArgs: in}
 	if req.DryRun {
-		return infer.CreateResponse[VaultObjectState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[VaultObjectState]{ID: "", Output: state}, nil
 	}
 	c, err := clientFor(ctx, nil)
 	if err != nil {

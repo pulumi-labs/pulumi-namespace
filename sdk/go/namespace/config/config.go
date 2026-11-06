@@ -16,7 +16,7 @@ func GetComputeEndpoint(ctx *pulumi.Context) string {
 	return config.Get(ctx, "namespace:computeEndpoint")
 }
 
-// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
 func GetGlobalEndpoint(ctx *pulumi.Context) string {
 	return config.Get(ctx, "namespace:globalEndpoint")
 }

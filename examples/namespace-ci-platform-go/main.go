@@ -30,9 +30,11 @@ func main() {
 		// A GitHub runner profile that uses the egress policy.
 		profile, err := namespace.NewGithubProfile(ctx, "ci-runner", &namespace.GithubProfileArgs{
 			Tag: pulumi.String("ci-medium"),
+			Os:  pulumi.String("ubuntu-24.04"),
 			InstanceShape: &namespace.ProfileInstanceShapeArgs{
 				VirtualCpu:      pulumi.Int(4),
 				MemoryMegabytes: pulumi.Int(8192),
+				MachineArch:     pulumi.String("amd64"),
 			},
 			NetworkPolicy: &namespace.ProfileNetworkPolicyArgs{
 				Egress:          pulumi.String("EGRESS_POLICY_TAG"),

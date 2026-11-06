@@ -42,7 +42,7 @@ type GithubProfile struct {
 	LastBuildError pulumi.StringPtrOutput `pulumi:"lastBuildError"`
 	// Egress network policy applied to runners.
 	NetworkPolicy ProfileNetworkPolicyPtrOutput `pulumi:"networkPolicy"`
-	// Operating system of the runner, for example 'linux'.
+	// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
 	Os pulumi.StringPtrOutput `pulumi:"os"`
 	// The server-assigned profile identifier.
 	ProfileId pulumi.StringOutput `pulumi:"profileId"`
@@ -126,7 +126,7 @@ type githubProfileArgs struct {
 	InstanceShape ProfileInstanceShape `pulumi:"instanceShape"`
 	// Egress network policy applied to runners.
 	NetworkPolicy *ProfileNetworkPolicy `pulumi:"networkPolicy"`
-	// Operating system of the runner, for example 'linux'.
+	// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
 	Os *string `pulumi:"os"`
 	// Any string. Changing it triggers a rebuild of the custom runner image (RebuildProfileImage) during update. Requires customRunnerImageSpec.
 	RebuildTrigger *string `pulumi:"rebuildTrigger"`
@@ -156,7 +156,7 @@ type GithubProfileArgs struct {
 	InstanceShape ProfileInstanceShapeInput
 	// Egress network policy applied to runners.
 	NetworkPolicy ProfileNetworkPolicyPtrInput
-	// Operating system of the runner, for example 'linux'.
+	// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
 	Os pulumi.StringPtrInput
 	// Any string. Changing it triggers a rebuild of the custom runner image (RebuildProfileImage) during update. Requires customRunnerImageSpec.
 	RebuildTrigger pulumi.StringPtrInput
@@ -318,7 +318,7 @@ func (o GithubProfileOutput) NetworkPolicy() ProfileNetworkPolicyPtrOutput {
 	return o.ApplyT(func(v *GithubProfile) ProfileNetworkPolicyPtrOutput { return v.NetworkPolicy }).(ProfileNetworkPolicyPtrOutput)
 }
 
-// Operating system of the runner, for example 'linux'.
+// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
 func (o GithubProfileOutput) Os() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *GithubProfile) pulumi.StringPtrOutput { return v.Os }).(pulumi.StringPtrOutput)
 }

@@ -56,7 +56,7 @@ type LookupGithubProfileResult struct {
 	LastBuildError *string `pulumi:"lastBuildError"`
 	// Egress network policy applied to runners.
 	NetworkPolicy *ProfileNetworkPolicy `pulumi:"networkPolicy"`
-	// Operating system of the runner, for example 'linux'.
+	// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
 	Os *string `pulumi:"os"`
 	// The server-assigned profile identifier.
 	ProfileId string `pulumi:"profileId"`
@@ -171,7 +171,7 @@ func (o LookupGithubProfileResultOutput) NetworkPolicy() ProfileNetworkPolicyPtr
 	return o.ApplyT(func(v LookupGithubProfileResult) *ProfileNetworkPolicy { return v.NetworkPolicy }).(ProfileNetworkPolicyPtrOutput)
 }
 
-// Operating system of the runner, for example 'linux'.
+// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
 func (o LookupGithubProfileResultOutput) Os() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v LookupGithubProfileResult) *string { return v.Os }).(pulumi.StringPtrOutput)
 }

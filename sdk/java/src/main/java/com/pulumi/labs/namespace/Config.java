@@ -18,7 +18,7 @@ public final class Config {
         return Codegen.stringProp("computeEndpoint").config(config).get();
     }
 /**
- * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+ * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
  * 
  */
     public Optional<String> globalEndpoint() {

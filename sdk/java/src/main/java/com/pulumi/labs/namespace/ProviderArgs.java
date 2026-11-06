@@ -32,14 +32,14 @@ public final class ProviderArgs extends com.pulumi.resources.ResourceArgs {
     }
 
     /**
-     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
      * 
      */
     @Import(name="globalEndpoint")
     private @Nullable Output<String> globalEndpoint;
 
     /**
-     * @return Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+     * @return Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
      * 
      */
     public Optional<Output<String>> globalEndpoint() {
@@ -141,7 +141,7 @@ public final class ProviderArgs extends com.pulumi.resources.ResourceArgs {
         }
 
         /**
-         * @param globalEndpoint Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+         * @param globalEndpoint Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
          * 
          * @return builder
          * 
@@ -152,7 +152,7 @@ public final class ProviderArgs extends com.pulumi.resources.ResourceArgs {
         }
 
         /**
-         * @param globalEndpoint Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+         * @param globalEndpoint Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
          * 
          * @return builder
          * 

@@ -461,7 +461,7 @@ export interface ProfileImageSpec {
 
 export interface ProfileInstanceShape {
     /**
-     * Machine architecture, for example 'amd64' or 'arm64'.
+     * Machine architecture: 'amd64' or 'arm64'. Required.
      */
     machineArch?: string;
     /**
@@ -469,7 +469,7 @@ export interface ProfileInstanceShape {
      */
     memoryMegabytes: number;
     /**
-     * Operating system of the instance shape, for example 'linux' or 'macos'.
+     * Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
      */
     os?: string;
     /**

@@ -19,9 +19,11 @@ resources:
     type: namespace:index:GithubProfile
     properties:
       tag: ci-medium
+      os: ubuntu-24.04
       instanceShape:
         virtualCpu: 4
         memoryMegabytes: 8192
+        machineArch: amd64
       networkPolicy:
         egress: EGRESS_POLICY_TAG
         egressPolicyTag: ${ci-egress.tag}

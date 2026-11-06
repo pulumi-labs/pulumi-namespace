@@ -84,7 +84,7 @@ public final class GetGithubProfileResult {
      */
     private @Nullable ProfileNetworkPolicy networkPolicy;
     /**
-     * @return Operating system of the runner, for example &#39;linux&#39;.
+     * @return Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not &#39;linux&#39;; that is what the platform reports in instanceShape.os).
      * 
      */
     private @Nullable String os;
@@ -212,7 +212,7 @@ public final class GetGithubProfileResult {
         return Optional.ofNullable(this.networkPolicy);
     }
     /**
-     * @return Operating system of the runner, for example &#39;linux&#39;.
+     * @return Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not &#39;linux&#39;; that is what the platform reports in instanceShape.os).
      * 
      */
     public Optional<String> os() {

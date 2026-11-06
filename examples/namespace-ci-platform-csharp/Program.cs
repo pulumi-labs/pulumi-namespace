@@ -29,7 +29,8 @@ return await Deployment.RunAsync(() =>
     var profile = new GithubProfile("ci-runner", new GithubProfileArgs
     {
         Tag = "ci-medium",
-        InstanceShape = new ProfileInstanceShapeArgs { VirtualCpu = 4, MemoryMegabytes = 8192 },
+        Os = "ubuntu-24.04",
+        InstanceShape = new ProfileInstanceShapeArgs { VirtualCpu = 4, MemoryMegabytes = 8192, MachineArch = "amd64" },
         NetworkPolicy = new ProfileNetworkPolicyArgs
         {
             Egress = "EGRESS_POLICY_TAG",

@@ -178,6 +178,14 @@ func optIn(property string, v *string, allowed ...string) []pgp.CheckFailure {
 	return failIfNotIn(property, *v, allowed...)
 }
 
+// reqIn is optIn for a property the API requires: a missing value fails too.
+func reqIn(property string, v *string, allowed ...string) []pgp.CheckFailure {
+	if v == nil || *v == "" {
+		return []pgp.CheckFailure{fail(property, "is required; supported values: %s", strings.Join(allowed, ", "))}
+	}
+	return failIfNotIn(property, *v, allowed...)
+}
+
 func requireNonEmpty(property, v string) []pgp.CheckFailure {
 	if strings.TrimSpace(v) == "" {
 		return []pgp.CheckFailure{fail(property, "must not be empty")}

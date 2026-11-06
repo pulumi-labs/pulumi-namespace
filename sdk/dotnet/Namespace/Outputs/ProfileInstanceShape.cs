@@ -15,7 +15,7 @@ namespace Pulumi.Labs.Namespace.Outputs
     public sealed class ProfileInstanceShape
     {
         /// <summary>
-        /// Machine architecture, for example 'amd64' or 'arm64'.
+        /// Machine architecture: 'amd64' or 'arm64'. Required.
         /// </summary>
         public readonly string? MachineArch;
         /// <summary>
@@ -23,7 +23,7 @@ namespace Pulumi.Labs.Namespace.Outputs
         /// </summary>
         public readonly int MemoryMegabytes;
         /// <summary>
-        /// Operating system of the instance shape, for example 'linux' or 'macos'.
+        /// Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
         /// </summary>
         public readonly string? Os;
         /// <summary>

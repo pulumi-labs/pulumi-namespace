@@ -276,7 +276,7 @@ func (r *Instance) Create(
 		return infer.CreateResponse[InstanceState]{}, err
 	}
 	if req.DryRun {
-		return infer.CreateResponse[InstanceState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[InstanceState]{ID: "", Output: state}, nil
 	}
 	c, err := clientFor(ctx, req.Inputs.Region)
 	if err != nil {
@@ -396,8 +396,10 @@ func (r *Instance) Read(
 		state.Shape = InstanceShape{
 			VirtualCPU:      int(md.GetShape().GetVirtualCpu()),
 			MemoryMegabytes: int(md.GetShape().GetMemoryMegabytes()),
-			MachineArch:     emptyToNil(md.GetShape().GetMachineArch()),
-			OS:              emptyToNil(md.GetShape().GetOs()),
+			// MachineArch and OS stay unset: the platform fills them in, and shape
+			// replaces the instance on any change, so a program that leaves them
+			// out must not see them as removed (#1571). The platform values are
+			// not copied into inputs.
 		}
 		state.DocumentedPurpose = emptyToNil(md.GetDocumentedPurpose())
 		state.Deadline = emptyToNil(formatTimestamp(md.GetDeadline()))
