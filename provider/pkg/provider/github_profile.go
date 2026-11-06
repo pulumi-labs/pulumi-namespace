@@ -43,8 +43,8 @@ type ProfileInstanceShape struct {
 func (s *ProfileInstanceShape) Annotate(a infer.Annotator) {
 	a.Describe(&s.VirtualCPU, "Number of virtual CPUs.")
 	a.Describe(&s.MemoryMegabytes, "Memory in megabytes.")
-	a.Describe(&s.MachineArch, "Machine architecture, for example 'amd64' or 'arm64'.")
-	a.Describe(&s.Os, "Operating system of the instance shape, for example 'linux' or 'macos'.")
+	a.Describe(&s.MachineArch, "Machine architecture: 'amd64' or 'arm64'. Required.")
+	a.Describe(&s.Os, "Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.")
 }
 
 // ProfileCacheVolume configures one cache volume attached to runners.
@@ -161,7 +161,7 @@ func (r *GithubProfile) Annotate(a infer.Annotator) {
 func (a *GithubProfileArgs) Annotate(ann infer.Annotator) {
 	ann.Describe(&a.Tag, "The profile tag used in 'runs-on' labels. Changing it replaces the profile.")
 	ann.Describe(&a.Description, "A human-readable description of the profile.")
-	ann.Describe(&a.Os, "Operating system of the runner, for example 'linux'.")
+	ann.Describe(&a.Os, "Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).")
 	ann.Describe(&a.InstanceShape, "The machine shape of runners using this profile.")
 	ann.Describe(&a.CacheVolumeSettings, "Cache volumes attached to runners.")
 	ann.Describe(&a.BuilderMode, "Docker builder mode: USE_REMOTE_BUILDER, USE_LOCAL_CACHE or NO_CACHING.")
@@ -186,9 +186,11 @@ func (s *GithubProfileState) Annotate(ann infer.Annotator) {
 }
 
 var (
-	builderModes = []string{"USE_REMOTE_BUILDER", "USE_LOCAL_CACHE", "NO_CACHING"}
-	accessLevels = []string{"ACCESS_LEVEL_PERMISSIVE", "ACCESS_LEVEL_LIMITED", "ACCESS_LEVEL_RESTRICTED"}
-	egressModes  = []string{"EGRESS_POLICY_NONE", "EGRESS_POLICY_DOMAIN_ALLOW_LIST", "EGRESS_POLICY_TAG"}
+	profileOSes   = []string{"ubuntu-20.04", "ubuntu-22.04", "ubuntu-24.04", "ubuntu-24.04-systemd", "ubuntu-26.04"}
+	machineArches = []string{"arm64", "amd64"}
+	builderModes  = []string{"USE_REMOTE_BUILDER", "USE_LOCAL_CACHE", "NO_CACHING"}
+	accessLevels  = []string{"ACCESS_LEVEL_PERMISSIVE", "ACCESS_LEVEL_LIMITED", "ACCESS_LEVEL_RESTRICTED"}
+	egressModes   = []string{"EGRESS_POLICY_NONE", "EGRESS_POLICY_DOMAIN_ALLOW_LIST", "EGRESS_POLICY_TAG"}
 )
 
 func (a GithubProfileArgs) validate() []pgp.CheckFailure {
@@ -200,6 +202,10 @@ func (a GithubProfileArgs) validate() []pgp.CheckFailure {
 	if a.InstanceShape.MemoryMegabytes <= 0 {
 		f = append(f, fail("instanceShape.memoryMegabytes", "must be greater than 0"))
 	}
+	// The API rejects a profile without these at apply time (#1570), so fail at
+	// preview with the supported values.
+	f = append(f, reqIn("os", a.Os, profileOSes...)...)
+	f = append(f, reqIn("instanceShape.machineArch", a.InstanceShape.MachineArch, machineArches...)...)
 	f = append(f, optIn("builderMode", a.BuilderMode, builderModes...)...)
 	f = append(f, optIn("accessLevel", a.AccessLevel, accessLevels...)...)
 	if s := a.CustomRunnerImageSpec; s != nil && s.UbuntuSpec != nil && s.DockerSpec != nil {
@@ -240,12 +246,29 @@ func profileSpec(in GithubProfileArgs) (*githubv1.RunnerProfileSpec, error) {
 	return &spec, nil
 }
 
+// Values the platform fills in for a profile that does not declare them.
+const (
+	defaultBuilderMode = "NO_CACHING"
+	defaultShapeOS     = "linux"
+)
+
 // applyProfile copies server-owned fields and, on import (declared == nil), the
 // whole spec into state.
 func applyProfile(state *GithubProfileState, p *githubv1.RunnerProfileWithStatus, declared *GithubProfileArgs) error {
 	var srv GithubProfileArgs
 	if err := fromProto(p.GetSpec(), &srv); err != nil {
 		return err
+	}
+	if declared == nil {
+		// Import: the program is not known, so drop what the platform fills in
+		// itself. A program that declares these values later sees an in-place
+		// update at most (#1571).
+		if srv.BuilderMode != nil && *srv.BuilderMode == defaultBuilderMode {
+			srv.BuilderMode = nil
+		}
+		if srv.InstanceShape.Os != nil && *srv.InstanceShape.Os == defaultShapeOS {
+			srv.InstanceShape.Os = nil
+		}
 	}
 	if declared != nil {
 		keepDeclared(*declared, &srv)
@@ -278,7 +301,7 @@ func (r *GithubProfile) Create(
 ) (infer.CreateResponse[GithubProfileState], error) {
 	state := GithubProfileState{GithubProfileArgs: req.Inputs}
 	if req.DryRun {
-		return infer.CreateResponse[GithubProfileState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[GithubProfileState]{ID: "", Output: state}, nil
 	}
 	spec, err := profileSpec(req.Inputs)
 	if err != nil {
@@ -289,7 +312,7 @@ func (r *GithubProfile) Create(
 		return infer.CreateResponse[GithubProfileState]{}, err
 	}
 	var res githubv1.CreateProfileResponse
-	if err := c.call(ctx, c.endpoints.globalURL(), githubProfileService, "CreateProfile",
+	if err := c.call(ctx, c.endpoints.githubURL(), githubProfileService, "CreateProfile",
 		&githubv1.CreateProfileRequest{Spec: spec}, &res); err != nil {
 		return infer.CreateResponse[GithubProfileState]{}, fmt.Errorf("create github profile %q: %w", req.Inputs.Tag, err)
 	}
@@ -319,7 +342,7 @@ func findProfile(ctx context.Context, c *nsClient, id string) (*githubv1.RunnerP
 
 func listProfiles(ctx context.Context, c *nsClient) ([]*githubv1.RunnerProfileWithStatus, error) {
 	var res githubv1.ListProfilesResponse
-	if err := c.call(ctx, c.endpoints.globalURL(), githubProfileService, "ListProfiles", &emptypb.Empty{}, &res); err != nil {
+	if err := c.call(ctx, c.endpoints.githubURL(), githubProfileService, "ListProfiles", &emptypb.Empty{}, &res); err != nil {
 		return nil, err
 	}
 	return res.GetProfiles(), nil
@@ -369,7 +392,7 @@ func (r *GithubProfile) Update(
 		return infer.UpdateResponse[GithubProfileState]{}, err
 	}
 	var res githubv1.UpdateProfileResponse
-	if err := c.call(ctx, c.endpoints.globalURL(), githubProfileService, "UpdateProfile", &githubv1.UpdateProfileRequest{
+	if err := c.call(ctx, c.endpoints.githubURL(), githubProfileService, "UpdateProfile", &githubv1.UpdateProfileRequest{
 		ProfileId:     req.ID,
 		Spec:          spec,
 		UpdateVersion: int64(req.State.Version),
@@ -380,7 +403,7 @@ func (r *GithubProfile) Update(
 	trigger, old := derefStr(req.Inputs.RebuildTrigger), derefStr(req.State.RebuildTrigger)
 	if trigger != old && req.Inputs.CustomRunnerImageSpec != nil {
 		var rb githubv1.RebuildProfileImageResponse
-		if err := c.call(ctx, c.endpoints.globalURL(), githubProfileService, "RebuildProfileImage",
+		if err := c.call(ctx, c.endpoints.githubURL(), githubProfileService, "RebuildProfileImage",
 			&githubv1.RebuildProfileImageRequest{ProfileId: req.ID}, &rb); err != nil {
 			// UpdateProfile already succeeded (and bumped the version), so record
 			// that, but keep the previous rebuildTrigger in state so the next up
@@ -415,7 +438,7 @@ func (r *GithubProfile) Delete(
 	if err != nil {
 		return infer.DeleteResponse{}, err
 	}
-	err = c.call(ctx, c.endpoints.globalURL(), githubProfileService, "DeleteProfile",
+	err = c.call(ctx, c.endpoints.githubURL(), githubProfileService, "DeleteProfile",
 		&githubv1.DeleteProfileRequest{ProfileId: req.ID}, nil)
 	if err != nil && !isNotFound(err) {
 		return infer.DeleteResponse{}, fmt.Errorf("delete github profile %q: %w", req.ID, err)

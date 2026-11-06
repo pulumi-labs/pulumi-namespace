@@ -51,7 +51,7 @@
       },
       "globalEndpoint": {
         "type": "string",
-        "description": "Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com."
+        "description": "Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well."
       },
       "iamEndpoint": {
         "type": "string",
@@ -749,7 +749,7 @@
       "properties": {
         "machineArch": {
           "type": "string",
-          "description": "Machine architecture, for example 'amd64' or 'arm64'."
+          "description": "Machine architecture: 'amd64' or 'arm64'. Required."
         },
         "memoryMegabytes": {
           "type": "integer",
@@ -757,7 +757,7 @@
         },
         "os": {
           "type": "string",
-          "description": "Operating system of the instance shape, for example 'linux' or 'macos'."
+          "description": "Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os."
         },
         "virtualCpu": {
           "type": "integer",
@@ -1319,7 +1319,7 @@
       },
       "globalEndpoint": {
         "type": "string",
-        "description": "Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com."
+        "description": "Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well."
       },
       "iamEndpoint": {
         "type": "string",
@@ -1352,7 +1352,7 @@
       },
       "globalEndpoint": {
         "type": "string",
-        "description": "Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com."
+        "description": "Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well."
       },
       "iamEndpoint": {
         "type": "string",
@@ -1681,7 +1681,7 @@
         },
         "os": {
           "type": "string",
-          "description": "Operating system of the runner, for example 'linux'."
+          "description": "Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os)."
         },
         "profileId": {
           "type": "string",
@@ -1762,7 +1762,7 @@
         },
         "os": {
           "type": "string",
-          "description": "Operating system of the runner, for example 'linux'."
+          "description": "Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os)."
         },
         "rebuildTrigger": {
           "type": "string",
@@ -2901,7 +2901,7 @@
             "description": "Egress network policy applied to runners."
           },
           "os": {
-            "description": "Operating system of the runner, for example 'linux'.",
+            "description": "Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).",
             "type": "string"
           },
           "profileId": {

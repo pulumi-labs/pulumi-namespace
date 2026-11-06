@@ -213,7 +213,7 @@ func (r *InstanceIngress) Create(
 	in := req.Inputs
 	state := InstanceIngressState{InstanceIngressArgs: in}
 	if req.DryRun {
-		return infer.CreateResponse[InstanceIngressState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[InstanceIngressState]{ID: "", Output: state}, nil
 	}
 	c, err := clientFor(ctx, in.Region)
 	if err != nil {

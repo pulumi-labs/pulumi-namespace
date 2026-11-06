@@ -28,7 +28,7 @@ class ProviderArgs:
         The set of arguments for constructing a Provider resource.
 
         :param pulumi.Input[_builtins.str] compute_endpoint: Full base URL of the compute API. A '{region}' placeholder is replaced with the region; without one the URL is used for every region. Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.
-        :param pulumi.Input[_builtins.str] global_endpoint: Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        :param pulumi.Input[_builtins.str] global_endpoint: Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         :param pulumi.Input[_builtins.str] iam_endpoint: Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.
         :param pulumi.Input[_builtins.str] region: Region for compute resources, such as 'us' or 'eu'. Selects the {region}.compute.namespaceapis.com endpoint. Defaults to 'us'. Falls back to the NSC_REGION environment variable.
         :param pulumi.Input[_builtins.str] token: Namespace Cloud bearer token: a revokable token ('nsc token create'), a development token ('nsc auth generate-dev-token'), or the result of an OIDC token exchange. Falls back to the NSC_TOKEN environment variable.
@@ -64,7 +64,7 @@ class ProviderArgs:
     @pulumi.getter(name="globalEndpoint")
     def global_endpoint(self) -> Optional[pulumi.Input[_builtins.str]]:
         """
-        Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         """
         return pulumi.get(self, "global_endpoint")
 
@@ -127,7 +127,7 @@ class Provider(pulumi.ProviderResource):
         :param str resource_name: The name of the resource.
         :param pulumi.ResourceOptions opts: Options for the resource.
         :param pulumi.Input[_builtins.str] compute_endpoint: Full base URL of the compute API. A '{region}' placeholder is replaced with the region; without one the URL is used for every region. Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.
-        :param pulumi.Input[_builtins.str] global_endpoint: Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        :param pulumi.Input[_builtins.str] global_endpoint: Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         :param pulumi.Input[_builtins.str] iam_endpoint: Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.
         :param pulumi.Input[_builtins.str] region: Region for compute resources, such as 'us' or 'eu'. Selects the {region}.compute.namespaceapis.com endpoint. Defaults to 'us'. Falls back to the NSC_REGION environment variable.
         :param pulumi.Input[_builtins.str] token: Namespace Cloud bearer token: a revokable token ('nsc token create'), a development token ('nsc auth generate-dev-token'), or the result of an OIDC token exchange. Falls back to the NSC_TOKEN environment variable.
@@ -199,7 +199,7 @@ class Provider(pulumi.ProviderResource):
     @pulumi.getter(name="globalEndpoint")
     def global_endpoint(self) -> pulumi.Output[Optional[_builtins.str]]:
         """
-        Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         """
         return pulumi.get(self, "global_endpoint")
 

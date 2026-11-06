@@ -47,7 +47,7 @@ class GithubProfileArgs:
         :param pulumi.Input[_builtins.str] emoji: An emoji shown next to the profile in the dashboard.
         :param pulumi.Input[Sequence[pulumi.Input[_builtins.str]]] experimental_features: Experimental feature flags enabled on the profile.
         :param pulumi.Input['ProfileNetworkPolicyArgs'] network_policy: Egress network policy applied to runners.
-        :param pulumi.Input[_builtins.str] os: Operating system of the runner, for example 'linux'.
+        :param pulumi.Input[_builtins.str] os: Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
         :param pulumi.Input[_builtins.str] rebuild_trigger: Any string. Changing it triggers a rebuild of the custom runner image (RebuildProfileImage) during update. Requires customRunnerImageSpec.
         :param pulumi.Input[_builtins.int] swap_size_mb: Swap size in megabytes.
         """
@@ -200,7 +200,7 @@ class GithubProfileArgs:
     @pulumi.getter
     def os(self) -> Optional[pulumi.Input[_builtins.str]]:
         """
-        Operating system of the runner, for example 'linux'.
+        Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
         """
         return pulumi.get(self, "os")
 
@@ -268,7 +268,7 @@ class GithubProfile(pulumi.CustomResource):
         :param pulumi.Input[Sequence[pulumi.Input[_builtins.str]]] experimental_features: Experimental feature flags enabled on the profile.
         :param pulumi.Input[Union['ProfileInstanceShapeArgs', 'ProfileInstanceShapeArgsDict']] instance_shape: The machine shape of runners using this profile.
         :param pulumi.Input[Union['ProfileNetworkPolicyArgs', 'ProfileNetworkPolicyArgsDict']] network_policy: Egress network policy applied to runners.
-        :param pulumi.Input[_builtins.str] os: Operating system of the runner, for example 'linux'.
+        :param pulumi.Input[_builtins.str] os: Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
         :param pulumi.Input[_builtins.str] rebuild_trigger: Any string. Changing it triggers a rebuild of the custom runner image (RebuildProfileImage) during update. Requires customRunnerImageSpec.
         :param pulumi.Input[_builtins.int] swap_size_mb: Swap size in megabytes.
         :param pulumi.Input[_builtins.str] tag: The profile tag used in 'runs-on' labels. Changing it replaces the profile.
@@ -498,7 +498,7 @@ class GithubProfile(pulumi.CustomResource):
     @pulumi.getter
     def os(self) -> pulumi.Output[Optional[_builtins.str]]:
         """
-        Operating system of the runner, for example 'linux'.
+        Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
         """
         return pulumi.get(self, "os")
 

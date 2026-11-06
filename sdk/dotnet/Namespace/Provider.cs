@@ -20,7 +20,7 @@ namespace Pulumi.Labs.Namespace
         public Output<string?> ComputeEndpoint { get; private set; } = null!;
 
         /// <summary>
-        /// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        /// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         /// </summary>
         [Output("globalEndpoint")]
         public Output<string?> GlobalEndpoint { get; private set; } = null!;
@@ -83,7 +83,7 @@ namespace Pulumi.Labs.Namespace
         public Input<string>? ComputeEndpoint { get; set; }
 
         /// <summary>
-        /// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        /// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         /// </summary>
         [Input("globalEndpoint")]
         public Input<string>? GlobalEndpoint { get; set; }

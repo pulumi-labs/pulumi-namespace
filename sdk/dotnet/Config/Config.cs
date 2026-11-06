@@ -44,7 +44,7 @@ namespace Pulumi.Labs.Namespace
 
         private static readonly __Value<string?> _globalEndpoint = new __Value<string?>(() => __config.Get("globalEndpoint"));
         /// <summary>
-        /// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        /// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         /// </summary>
         public static string? GlobalEndpoint
         {

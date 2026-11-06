@@ -73,7 +73,7 @@ func (c *ProviderConfig) Annotate(a infer.Annotator) {
 		"Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.")
 	a.Describe(&c.IamEndpoint, "Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.")
 	a.Describe(&c.GlobalEndpoint, "Full base URL of the global API (vault, registry, egress policy). "+
-		"Defaults to https://global.namespaceapis.com.")
+		"Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.")
 }
 
 // Configure validates the endpoint overrides before any request is made. The
@@ -139,7 +139,7 @@ func clientFor(ctx context.Context, regionOverride *string) (*nsClient, error) {
 }
 
 // New returns the configured Namespace Cloud Pulumi provider.
-func New() (pgp.Provider, error) {
+func newProvider() (pgp.Provider, error) {
 	return infer.NewProviderBuilder().
 		WithDisplayName("Namespace Cloud").
 		WithDescription(

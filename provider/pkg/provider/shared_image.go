@@ -134,7 +134,7 @@ func (r *SharedImage) Create(
 	in := req.Inputs
 	state := SharedImageState{SharedImageArgs: in}
 	if req.DryRun {
-		return infer.CreateResponse[SharedImageState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[SharedImageState]{ID: "", Output: state}, nil
 	}
 	body := &registryv1.ShareImageRequest{
 		Repository: in.Repository, Digest: in.Digest, Visibility: sharedImageVisibility(in.Visibility), Suffix: derefStr(in.Suffix),

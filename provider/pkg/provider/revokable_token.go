@@ -164,7 +164,7 @@ func (r *RevokableToken) Create(
 ) (infer.CreateResponse[RevokableTokenState], error) {
 	state := RevokableTokenState{RevokableTokenArgs: req.Inputs}
 	if req.DryRun {
-		return infer.CreateResponse[RevokableTokenState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[RevokableTokenState]{ID: "", Output: state}, nil
 	}
 	c, err := clientFor(ctx, nil)
 	if err != nil {

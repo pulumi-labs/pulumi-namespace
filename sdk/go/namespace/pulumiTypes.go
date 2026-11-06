@@ -2559,11 +2559,11 @@ func (o ProfileImageSpecPtrOutput) UbuntuSpec() ProfileUbuntuSpecPtrOutput {
 }
 
 type ProfileInstanceShape struct {
-	// Machine architecture, for example 'amd64' or 'arm64'.
+	// Machine architecture: 'amd64' or 'arm64'. Required.
 	MachineArch *string `pulumi:"machineArch"`
 	// Memory in megabytes.
 	MemoryMegabytes int `pulumi:"memoryMegabytes"`
-	// Operating system of the instance shape, for example 'linux' or 'macos'.
+	// Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
 	Os *string `pulumi:"os"`
 	// Number of virtual CPUs.
 	VirtualCpu int `pulumi:"virtualCpu"`
@@ -2581,11 +2581,11 @@ type ProfileInstanceShapeInput interface {
 }
 
 type ProfileInstanceShapeArgs struct {
-	// Machine architecture, for example 'amd64' or 'arm64'.
+	// Machine architecture: 'amd64' or 'arm64'. Required.
 	MachineArch pulumi.StringPtrInput `pulumi:"machineArch"`
 	// Memory in megabytes.
 	MemoryMegabytes pulumi.IntInput `pulumi:"memoryMegabytes"`
-	// Operating system of the instance shape, for example 'linux' or 'macos'.
+	// Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
 	Os pulumi.StringPtrInput `pulumi:"os"`
 	// Number of virtual CPUs.
 	VirtualCpu pulumi.IntInput `pulumi:"virtualCpu"`
@@ -2617,7 +2617,7 @@ func (o ProfileInstanceShapeOutput) ToProfileInstanceShapeOutputWithContext(ctx 
 	return o
 }
 
-// Machine architecture, for example 'amd64' or 'arm64'.
+// Machine architecture: 'amd64' or 'arm64'. Required.
 func (o ProfileInstanceShapeOutput) MachineArch() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v ProfileInstanceShape) *string { return v.MachineArch }).(pulumi.StringPtrOutput)
 }
@@ -2627,7 +2627,7 @@ func (o ProfileInstanceShapeOutput) MemoryMegabytes() pulumi.IntOutput {
 	return o.ApplyT(func(v ProfileInstanceShape) int { return v.MemoryMegabytes }).(pulumi.IntOutput)
 }
 
-// Operating system of the instance shape, for example 'linux' or 'macos'.
+// Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
 func (o ProfileInstanceShapeOutput) Os() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v ProfileInstanceShape) *string { return v.Os }).(pulumi.StringPtrOutput)
 }

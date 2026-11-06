@@ -18,14 +18,14 @@ public final class ProfileInstanceShapeArgs extends com.pulumi.resources.Resourc
     public static final ProfileInstanceShapeArgs Empty = new ProfileInstanceShapeArgs();
 
     /**
-     * Machine architecture, for example &#39;amd64&#39; or &#39;arm64&#39;.
+     * Machine architecture: &#39;amd64&#39; or &#39;arm64&#39;. Required.
      * 
      */
     @Import(name="machineArch")
     private @Nullable Output<String> machineArch;
 
     /**
-     * @return Machine architecture, for example &#39;amd64&#39; or &#39;arm64&#39;.
+     * @return Machine architecture: &#39;amd64&#39; or &#39;arm64&#39;. Required.
      * 
      */
     public Optional<Output<String>> machineArch() {
@@ -48,14 +48,14 @@ public final class ProfileInstanceShapeArgs extends com.pulumi.resources.Resourc
     }
 
     /**
-     * Operating system of the instance shape, for example &#39;linux&#39; or &#39;macos&#39;.
+     * Operating system the platform reports for the shape (for example &#39;linux&#39;). Not an input vocabulary of its own: choose the runner image with the profile&#39;s top-level os.
      * 
      */
     @Import(name="os")
     private @Nullable Output<String> os;
 
     /**
-     * @return Operating system of the instance shape, for example &#39;linux&#39; or &#39;macos&#39;.
+     * @return Operating system the platform reports for the shape (for example &#39;linux&#39;). Not an input vocabulary of its own: choose the runner image with the profile&#39;s top-level os.
      * 
      */
     public Optional<Output<String>> os() {
@@ -105,7 +105,7 @@ public final class ProfileInstanceShapeArgs extends com.pulumi.resources.Resourc
         }
 
         /**
-         * @param machineArch Machine architecture, for example &#39;amd64&#39; or &#39;arm64&#39;.
+         * @param machineArch Machine architecture: &#39;amd64&#39; or &#39;arm64&#39;. Required.
          * 
          * @return builder
          * 
@@ -116,7 +116,7 @@ public final class ProfileInstanceShapeArgs extends com.pulumi.resources.Resourc
         }
 
         /**
-         * @param machineArch Machine architecture, for example &#39;amd64&#39; or &#39;arm64&#39;.
+         * @param machineArch Machine architecture: &#39;amd64&#39; or &#39;arm64&#39;. Required.
          * 
          * @return builder
          * 
@@ -147,7 +147,7 @@ public final class ProfileInstanceShapeArgs extends com.pulumi.resources.Resourc
         }
 
         /**
-         * @param os Operating system of the instance shape, for example &#39;linux&#39; or &#39;macos&#39;.
+         * @param os Operating system the platform reports for the shape (for example &#39;linux&#39;). Not an input vocabulary of its own: choose the runner image with the profile&#39;s top-level os.
          * 
          * @return builder
          * 
@@ -158,7 +158,7 @@ public final class ProfileInstanceShapeArgs extends com.pulumi.resources.Resourc
         }
 
         /**
-         * @param os Operating system of the instance shape, for example &#39;linux&#39; or &#39;macos&#39;.
+         * @param os Operating system the platform reports for the shape (for example &#39;linux&#39;). Not an input vocabulary of its own: choose the runner image with the profile&#39;s top-level os.
          * 
          * @return builder
          * 

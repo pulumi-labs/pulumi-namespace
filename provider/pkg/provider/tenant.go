@@ -129,7 +129,7 @@ func (r *Tenant) Create(
 		return infer.CreateResponse[TenantState]{}, err
 	}
 	if req.DryRun {
-		return infer.CreateResponse[TenantState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[TenantState]{ID: "", Output: state}, nil
 	}
 	c, err := clientFor(ctx, nil)
 	if err != nil {

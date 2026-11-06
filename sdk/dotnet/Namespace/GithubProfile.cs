@@ -95,7 +95,7 @@ namespace Pulumi.Labs.Namespace
         public Output<Outputs.ProfileNetworkPolicy?> NetworkPolicy { get; private set; } = null!;
 
         /// <summary>
-        /// Operating system of the runner, for example 'linux'.
+        /// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
         /// </summary>
         [Output("os")]
         public Output<string?> Os { get; private set; } = null!;
@@ -253,7 +253,7 @@ namespace Pulumi.Labs.Namespace
         public Input<Inputs.ProfileNetworkPolicyArgs>? NetworkPolicy { get; set; }
 
         /// <summary>
-        /// Operating system of the runner, for example 'linux'.
+        /// Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
         /// </summary>
         [Input("os")]
         public Input<string>? Os { get; set; }

@@ -17,7 +17,8 @@ egress = namespace.EgressPolicy(
 profile = namespace.GithubProfile(
     "ci-runner",
     tag="ci-medium",
-    instance_shape=namespace.ProfileInstanceShapeArgs(virtual_cpu=4, memory_megabytes=8192),
+    os="ubuntu-24.04",
+    instance_shape=namespace.ProfileInstanceShapeArgs(virtual_cpu=4, memory_megabytes=8192, machine_arch="amd64"),
     network_policy=namespace.ProfileNetworkPolicyArgs(egress="EGRESS_POLICY_TAG", egress_policy_tag=egress.tag),
 )
 

@@ -16,7 +16,7 @@ type Provider struct {
 
 	// Full base URL of the compute API. A '{region}' placeholder is replaced with the region; without one the URL is used for every region. Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.
 	ComputeEndpoint pulumi.StringPtrOutput `pulumi:"computeEndpoint"`
-	// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+	// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
 	GlobalEndpoint pulumi.StringPtrOutput `pulumi:"globalEndpoint"`
 	// Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.
 	IamEndpoint pulumi.StringPtrOutput `pulumi:"iamEndpoint"`
@@ -62,7 +62,7 @@ func NewProvider(ctx *pulumi.Context,
 type providerArgs struct {
 	// Full base URL of the compute API. A '{region}' placeholder is replaced with the region; without one the URL is used for every region. Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.
 	ComputeEndpoint *string `pulumi:"computeEndpoint"`
-	// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+	// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
 	GlobalEndpoint *string `pulumi:"globalEndpoint"`
 	// Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.
 	IamEndpoint *string `pulumi:"iamEndpoint"`
@@ -76,7 +76,7 @@ type providerArgs struct {
 type ProviderArgs struct {
 	// Full base URL of the compute API. A '{region}' placeholder is replaced with the region; without one the URL is used for every region. Intended for tests and private deployments. Defaults to https://{region}.compute.namespaceapis.com.
 	ComputeEndpoint pulumi.StringPtrInput
-	// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+	// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
 	GlobalEndpoint pulumi.StringPtrInput
 	// Full base URL of the IAM API. Defaults to https://iam.namespaceapis.com.
 	IamEndpoint pulumi.StringPtrInput
@@ -128,7 +128,7 @@ func (o ProviderOutput) ComputeEndpoint() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *Provider) pulumi.StringPtrOutput { return v.ComputeEndpoint }).(pulumi.StringPtrOutput)
 }
 
-// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+// Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
 func (o ProviderOutput) GlobalEndpoint() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *Provider) pulumi.StringPtrOutput { return v.GlobalEndpoint }).(pulumi.StringPtrOutput)
 }

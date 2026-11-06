@@ -89,7 +89,7 @@ export class GithubProfile extends pulumi.CustomResource {
      */
     declare public readonly networkPolicy: pulumi.Output<outputs.ProfileNetworkPolicy | undefined>;
     /**
-     * Operating system of the runner, for example 'linux'.
+     * Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
      */
     declare public readonly os: pulumi.Output<string | undefined>;
     /**
@@ -224,7 +224,7 @@ export interface GithubProfileArgs {
      */
     networkPolicy?: pulumi.Input<inputs.ProfileNetworkPolicyArgs | undefined>;
     /**
-     * Operating system of the runner, for example 'linux'.
+     * Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
      */
     os?: pulumi.Input<string | undefined>;
     /**

@@ -1619,8 +1619,8 @@ class ProfileInstanceShape(dict):
         """
         :param _builtins.int memory_megabytes: Memory in megabytes.
         :param _builtins.int virtual_cpu: Number of virtual CPUs.
-        :param _builtins.str machine_arch: Machine architecture, for example 'amd64' or 'arm64'.
-        :param _builtins.str os: Operating system of the instance shape, for example 'linux' or 'macos'.
+        :param _builtins.str machine_arch: Machine architecture: 'amd64' or 'arm64'. Required.
+        :param _builtins.str os: Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
         """
         pulumi.set(__self__, "memory_megabytes", memory_megabytes)
         pulumi.set(__self__, "virtual_cpu", virtual_cpu)
@@ -1649,7 +1649,7 @@ class ProfileInstanceShape(dict):
     @pulumi.getter(name="machineArch")
     def machine_arch(self) -> Optional[_builtins.str]:
         """
-        Machine architecture, for example 'amd64' or 'arm64'.
+        Machine architecture: 'amd64' or 'arm64'. Required.
         """
         return pulumi.get(self, "machine_arch")
 
@@ -1657,7 +1657,7 @@ class ProfileInstanceShape(dict):
     @pulumi.getter
     def os(self) -> Optional[_builtins.str]:
         """
-        Operating system of the instance shape, for example 'linux' or 'macos'.
+        Operating system the platform reports for the shape (for example 'linux'). Not an input vocabulary of its own: choose the runner image with the profile's top-level os.
         """
         return pulumi.get(self, "os")
 

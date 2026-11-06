@@ -272,7 +272,7 @@ func (r *BuildkiteQueue) Create(
 	state := BuildkiteQueueState{BuildkiteQueueArgs: req.Inputs}
 	name := req.Inputs.QueueName
 	if req.DryRun {
-		return infer.CreateResponse[BuildkiteQueueState]{ID: "preview", Output: state}, nil
+		return infer.CreateResponse[BuildkiteQueueState]{ID: "", Output: state}, nil
 	}
 	c, err := clientFor(ctx, nil)
 	if err != nil {

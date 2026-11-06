@@ -83,7 +83,7 @@ export interface GetGithubProfileResult {
      */
     readonly networkPolicy?: outputs.ProfileNetworkPolicy;
     /**
-     * Operating system of the runner, for example 'linux'.
+     * Runner image of the profile. Required: Namespace accepts ubuntu-20.04, ubuntu-22.04, ubuntu-24.04, ubuntu-24.04-systemd or ubuntu-26.04 (not 'linux'; that is what the platform reports in instanceShape.os).
      */
     readonly os?: string;
     /**

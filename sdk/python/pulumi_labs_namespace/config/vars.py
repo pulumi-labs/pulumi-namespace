@@ -30,7 +30,7 @@ class _ExportableConfig(types.ModuleType):
     @_builtins.property
     def global_endpoint(self) -> Optional[str]:
         """
-        Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+        Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
         """
         return __config__.get('globalEndpoint')
 

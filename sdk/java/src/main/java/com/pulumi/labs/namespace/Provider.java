@@ -31,14 +31,14 @@ public class Provider extends com.pulumi.resources.ProviderResource {
         return Codegen.optional(this.computeEndpoint);
     }
     /**
-     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
      * 
      */
     @Export(name="globalEndpoint", refs={String.class}, tree="[0]")
     private Output</* @Nullable */ String> globalEndpoint;
 
     /**
-     * @return Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+     * @return Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
      * 
      */
     public Output<Optional<String>> globalEndpoint() {

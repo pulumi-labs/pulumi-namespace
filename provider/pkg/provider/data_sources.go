@@ -457,7 +457,7 @@ func (f *GetGithubJobs) Invoke(
 			return nil, err
 		}
 		var res githubv1.ListJobsResponse
-		if err := c.call(ctx, c.endpoints.globalURL(), githubJobsService, "ListJobs", &rq, &res); err != nil {
+		if err := c.call(ctx, c.endpoints.githubURL(), githubJobsService, "ListJobs", &rq, &res); err != nil {
 			return nil, err
 		}
 		for _, j := range res.GetJobs() {

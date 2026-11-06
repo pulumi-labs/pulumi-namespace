@@ -24,7 +24,7 @@ export class Provider extends pulumi.ProviderResource {
      */
     declare public readonly computeEndpoint: pulumi.Output<string | undefined>;
     /**
-     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
      */
     declare public readonly globalEndpoint: pulumi.Output<string | undefined>;
     /**
@@ -73,7 +73,7 @@ export interface ProviderArgs {
      */
     computeEndpoint?: pulumi.Input<string | undefined>;
     /**
-     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com.
+     * Full base URL of the global API (vault, registry, egress policy). Defaults to https://global.namespaceapis.com; the GitHub runner services (GithubProfile, getGithubProfile, getGithubProfiles, getGithubJobs) default to https://private-api.global.namespaceapis.com, which this setting overrides as well.
      */
     globalEndpoint?: pulumi.Input<string | undefined>;
     /**

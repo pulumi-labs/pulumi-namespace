@@ -64,7 +64,7 @@ pulumi config set namespace:region eu
 | `region` | `NSC_REGION` | `us` | Region for instances, used to build `{region}.compute.namespaceapis.com`. |
 | `computeEndpoint` | none | derived from `region` | Full base URL of the compute API. A `{region}` placeholder is replaced with the region. For tests and private deployments. |
 | `iamEndpoint` | none | `https://iam.namespaceapis.com` | Full base URL of the IAM API. |
-| `globalEndpoint` | none | `https://global.namespaceapis.com` | Full base URL of the vault and other global services. |
+| `globalEndpoint` | none | `https://global.namespaceapis.com` (`https://private-api.global.namespaceapis.com` for the GitHub runner services) | Full base URL of the vault and other global services. Overrides both defaults. |
 
 ## Resources
 
@@ -99,6 +99,8 @@ An ephemeral container instance on Namespace compute. Instances are destroyed by
 
 Outputs: `instanceId`, `createdAt`, `readyAt`, `expiresAt`, `status`, `instanceUrl`, `ingressDomain`, `services` (name, status, endpointKind, endpoint), `effectiveRegion`. `effectiveRegion` is the region the instance was created in (the `region` input, else the provider region at that time). Refresh and destroy always use it, so changing the provider region or `NSC_REGION` later cannot lose track of a running instance. Refresh reports drift in `shape`, `documentedPurpose`, `deadline` and `labels`; server-filled defaults (such as the machine architecture) and labels the platform adds itself are not copied into your inputs. Import (instance ID, no containers) works in the provider's current region.
 
+Import leaves `shape.machineArch` and `shape.os` unset (the platform fills them in, and `shape` replaces the instance on any change), so a program that omits them plans no change after `pulumi import`. Declaring either later is a change to `shape` and replaces the instance, exactly as it would for an instance this provider created without them. Import also leaves out the platform's own `system/` labels (they are not yours, and `labels` replaces the instance, so copying them in would replace it on the first preview); your own labels and the deadline are read back.
+
 Create polls DescribeInstance every 2 seconds for up to 10 minutes until the instance is running. If the instance enters an error state the resource is still recorded so Pulumi can clean it up.
 
 ### `namespace:index:Tenant`
@@ -117,7 +119,7 @@ Outputs: `tenantId` (the resource ID), `createdAt`.
 
 ### `namespace:index:GithubProfile`
 
-A GitHub Actions runner profile (shape, cache volumes, builder mode, custom base image, network policy, access level). Inputs: `tag` (replaces), `description`, `os`, `instanceShape`, `cacheVolumeSettings`, `builderMode`, `experimentalFeatures`, `emoji`, `customRunnerImageSpec`, `networkPolicy`, `accessLevel`, `swapSizeMb`, `rebuildTrigger`. Everything except `tag` updates in place with optimistic concurrency on the profile version. Changing `rebuildTrigger` (requires `customRunnerImageSpec`) calls `RebuildProfileImage`. Outputs: `profileId` (the resource ID, also the import ID), `version`, `createdAt`, `updatedAt`, `imageStatus`, `imageRef`, `lastBuildError`.
+A GitHub Actions runner profile (shape, cache volumes, builder mode, custom base image, network policy, access level). Inputs: `tag` (replaces), `description`, `os` (required by the API, one of `ubuntu-20.04`, `ubuntu-22.04`, `ubuntu-24.04`, `ubuntu-24.04-systemd`, `ubuntu-26.04`; not `linux`), `instanceShape` (`virtualCpu`, `memoryMegabytes` and `machineArch` `amd64` or `arm64`, all required; `instanceShape.os` is what the platform reports, not an input vocabulary),  `cacheVolumeSettings`, `builderMode`, `experimentalFeatures`, `emoji`, `customRunnerImageSpec`, `networkPolicy`, `accessLevel`, `swapSizeMb`, `rebuildTrigger`. Everything except `tag` updates in place with optimistic concurrency on the profile version. Changing `rebuildTrigger` (requires `customRunnerImageSpec`) calls `RebuildProfileImage`. Outputs: `profileId` (the resource ID, also the import ID), `version`, `createdAt`, `updatedAt`, `imageStatus`, `imageRef`, `lastBuildError`.
 
 ### `namespace:index:EgressPolicy`
 

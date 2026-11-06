@@ -185,6 +185,31 @@ func TestGithubProfile_CheckRejectsBadInput(t *testing.T) {
 	assert.NotEmpty(t, fs, "rebuildTrigger without customRunnerImageSpec is rejected")
 }
 
+// #1570: the API rejects a profile without os and instanceShape.machineArch,
+// and with an unsupported os such as "linux", only at apply time; Check says so
+// at preview.
+func TestGithubProfile_CheckRequiresOsAndMachineArch(t *testing.T) {
+	s := newServerFor(t, newFakeAPI(t))
+	props := func(failures []pgp.CheckFailure) []string {
+		var out []string
+		for _, f := range failures {
+			out = append(out, f.Property)
+		}
+		return out
+	}
+	shape := func(m map[string]any) map[string]any {
+		m["virtualCpu"], m["memoryMegabytes"] = 2, 4096
+		return m
+	}
+	fs := checkFails(t, s, "GithubProfile", map[string]any{"tag": "x", "instanceShape": shape(map[string]any{})})
+	assert.ElementsMatch(t, []string{"os", "instanceShape.machineArch"}, props(fs))
+	fs = checkFails(t, s, "GithubProfile", map[string]any{"tag": "x", "os": "linux", "instanceShape": shape(map[string]any{"machineArch": "x86"})})
+	assert.ElementsMatch(t, []string{"os", "instanceShape.machineArch"}, props(fs))
+	assert.Contains(t, fs[0].Reason+fs[1].Reason, "ubuntu-24.04")
+	fs = checkFails(t, s, "GithubProfile", map[string]any{"tag": "x", "os": "ubuntu-24.04", "instanceShape": shape(map[string]any{"machineArch": "arm64"})})
+	assert.Empty(t, fs)
+}
+
 // --------------------------------------------------------------------------
 // EgressPolicy
 // --------------------------------------------------------------------------
