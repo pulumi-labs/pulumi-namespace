@@ -41,6 +41,18 @@ namespace Pulumi.Labs.Namespace
         public Output<string?> DocumentedPurpose { get; private set; } = null!;
 
         /// <summary>
+        /// The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+        /// </summary>
+        [Output("effectiveMachineArch")]
+        public Output<string?> EffectiveMachineArch { get; private set; } = null!;
+
+        /// <summary>
+        /// The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+        /// </summary>
+        [Output("effectiveOs")]
+        public Output<string?> EffectiveOs { get; private set; } = null!;
+
+        /// <summary>
         /// The region the instance actually runs in (the resource region, else the provider region at creation time). Later operations always use this region.
         /// </summary>
         [Output("effectiveRegion")]

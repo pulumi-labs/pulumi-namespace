@@ -82,6 +82,34 @@ public class Instance extends com.pulumi.resources.CustomResource {
         return Codegen.optional(this.documentedPurpose);
     }
     /**
+     * The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+     * 
+     */
+    @Export(name="effectiveMachineArch", refs={String.class}, tree="[0]")
+    private Output</* @Nullable */ String> effectiveMachineArch;
+
+    /**
+     * @return The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+     * 
+     */
+    public Output<Optional<String>> effectiveMachineArch() {
+        return Codegen.optional(this.effectiveMachineArch);
+    }
+    /**
+     * The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+     * 
+     */
+    @Export(name="effectiveOs", refs={String.class}, tree="[0]")
+    private Output</* @Nullable */ String> effectiveOs;
+
+    /**
+     * @return The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+     * 
+     */
+    public Output<Optional<String>> effectiveOs() {
+        return Codegen.optional(this.effectiveOs);
+    }
+    /**
      * The region the instance actually runs in (the resource region, else the provider region at creation time). Later operations always use this region.
      * 
      */

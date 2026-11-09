@@ -2,8 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Updated the generated Namespace Cloud API client (`buf.build/gen/go/namespace/cloud/protocolbuffers/go`) from the 2026-11-03 build to the 2026-11-06 build (v1.36.12-20261106090801-6db93b78d1d9.2). No resource, function or schema change.
+
 ### Fixed
 
+- `GithubProfile`: declaring the deprecated `cacheVolumeSettings[].volumeTag` no longer plans an update on the first preview after `pulumi import`. The Namespace API removed the field, it is never sent and an import cannot read it back, so a program that still declares it differed from the imported state. A new diff ignores `volumeTag`; every other input compares as before and nothing sent to the API changes. Mirror issue https://github.com/pulumi-labs/pulumi-namespace/issues/8 (#1691).
+- `Instance`: after `pulumi import`, a program that declares `shape.machineArch` and `shape.os` no longer plans a replacement of the running instance. Import still leaves them unset (#1571), so a program that omits them stays clean, but the instance now records what the platform reports in the new outputs `effectiveMachineArch` and `effectiveOs`, and a new diff treats an unset recorded value as equal to the same value declared later. A different declared value still replaces. Mirror issue https://github.com/pulumi-labs/pulumi-namespace/issues/9 (#1677). Additive output properties, not breaking.
 - Security: `Read` also marks a secret nested inside an object, an array of objects or a map of objects (`EgressHeader.value`, `EgressInject.value`, `QueueHeader.value` and `QueueValueFrom.static`) as a secret, not only top-level properties (#1599). If the provider schema cannot be loaded during a `Read`, the failure is no longer cached for the life of the process: the next `Read` retries (#1599).
 - Security: `pulumi import` and `pulumi refresh` now store the properties this provider marks secret (`VaultObject.value` and `RevokableToken.bearerToken`) as secrets. A `Read` response only kept the secretness of the state it was given, and an import has no state, so a value the provider recovered from the API was written to the state as plaintext. The secret properties are read from the provider's own schema, so every resource is covered. State imported before this fix stays plaintext until its next `pulumi refresh`, which re-encrypts it (#1577).
 - A preview no longer invents resource IDs. `Create` during `pulumi preview` returned the resource's logical name (or the placeholder `preview`) as its ID, so `id` was a known, wrong value and a program passing it to a lookup or to another resource ran against a name that does not exist and failed the preview (for example `getWebhook(webhook.id)`). A preview has no real ID now, so `id` stays unknown until the apply. Mirror issue https://github.com/pulumi-labs/pulumi-huggingface/issues/7 (#1590).

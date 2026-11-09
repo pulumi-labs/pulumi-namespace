@@ -217,6 +217,8 @@ class Instance(pulumi.CustomResource):
                 raise TypeError("Missing required property 'shape'")
             __props__.__dict__["shape"] = shape
             __props__.__dict__["created_at"] = None
+            __props__.__dict__["effective_machine_arch"] = None
+            __props__.__dict__["effective_os"] = None
             __props__.__dict__["effective_region"] = None
             __props__.__dict__["expires_at"] = None
             __props__.__dict__["ingress_domain"] = None
@@ -253,6 +255,8 @@ class Instance(pulumi.CustomResource):
         __props__.__dict__["created_at"] = None
         __props__.__dict__["deadline"] = None
         __props__.__dict__["documented_purpose"] = None
+        __props__.__dict__["effective_machine_arch"] = None
+        __props__.__dict__["effective_os"] = None
         __props__.__dict__["effective_region"] = None
         __props__.__dict__["expires_at"] = None
         __props__.__dict__["ingress_domain"] = None
@@ -298,6 +302,22 @@ class Instance(pulumi.CustomResource):
         Free-form note on why the instance exists. Changing it replaces the instance.
         """
         return pulumi.get(self, "documented_purpose")
+
+    @_builtins.property
+    @pulumi.getter(name="effectiveMachineArch")
+    def effective_machine_arch(self) -> pulumi.Output[Optional[_builtins.str]]:
+        """
+        The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+        """
+        return pulumi.get(self, "effective_machine_arch")
+
+    @_builtins.property
+    @pulumi.getter(name="effectiveOs")
+    def effective_os(self) -> pulumi.Output[Optional[_builtins.str]]:
+        """
+        The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+        """
+        return pulumi.get(self, "effective_os")
 
     @_builtins.property
     @pulumi.getter(name="effectiveRegion")

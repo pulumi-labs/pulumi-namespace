@@ -252,6 +252,29 @@ const (
 	defaultShapeOS     = "linux"
 )
 
+// Diff compares the program with the recorded inputs like the framework's default diff, except that
+// cacheVolumeSettings[].volumeTag never counts as a change: the Namespace API removed it, it is never sent
+// and an import cannot read it back, so a program that still declares it would otherwise plan an update
+// on the first preview after an import (#1691).
+func (r *GithubProfile) Diff(
+	_ context.Context, req infer.DiffRequest[GithubProfileArgs, GithubProfileState],
+) (infer.DiffResponse, error) {
+	old, cur := req.State.GithubProfileArgs, req.Inputs
+	if len(cur.CacheVolumeSettings) > 0 {
+		vols := make([]ProfileCacheVolume, len(cur.CacheVolumeSettings))
+		copy(vols, cur.CacheVolumeSettings)
+		for i := range vols {
+			if i < len(old.CacheVolumeSettings) {
+				vols[i].VolumeTag = old.CacheVolumeSettings[i].VolumeTag
+			} else {
+				vols[i].VolumeTag = nil
+			}
+		}
+		cur.CacheVolumeSettings = vols
+	}
+	return diffArgs(old, cur), nil
+}
+
 // applyProfile copies server-owned fields and, on import (declared == nil), the
 // whole spec into state.
 func applyProfile(state *GithubProfileState, p *githubv1.RunnerProfileWithStatus, declared *GithubProfileArgs) error {

@@ -1807,6 +1807,14 @@
           "description": "Free-form note on why the instance exists. Changing it replaces the instance.",
           "replaceOnChanges": true
         },
+        "effectiveMachineArch": {
+          "type": "string",
+          "description": "The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance."
+        },
+        "effectiveOs": {
+          "type": "string",
+          "description": "The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance."
+        },
         "effectiveRegion": {
           "type": "string",
           "description": "The region the instance actually runs in (the resource region, else the provider region at creation time). Later operations always use this region."
