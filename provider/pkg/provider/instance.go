@@ -151,6 +151,35 @@ type InstanceState struct {
 	// and Delete talk to this region, so changing the provider region or
 	// NSC_REGION later cannot orphan the instance.
 	EffectiveRegion *string `pulumi:"effectiveRegion,optional"`
+	// EffectiveMachineArch is the CPU architecture the platform reports for the
+	// instance, whether or not shape.machineArch was declared.
+	EffectiveMachineArch *string `pulumi:"effectiveMachineArch,optional"`
+	// EffectiveOS is the operating system the platform reports for the instance,
+	// whether or not shape.os was declared.
+	EffectiveOS *string `pulumi:"effectiveOs,optional"`
+}
+
+// Diff compares the program with the recorded inputs. Shape replaces the
+// instance on any change, and an imported instance cannot know whether the
+// program declares shape.machineArch and shape.os (#1571 leaves them unset), so
+// an unset recorded value never differs from the value the platform reports:
+// a program that declares exactly what the platform reports plans no change,
+// whether or not it declares it, and a different value still replaces (#1677).
+func (r *Instance) Diff(
+	_ context.Context, req infer.DiffRequest[InstanceArgs, InstanceState],
+) (infer.DiffResponse, error) {
+	old := req.State.InstanceArgs
+	shape := old.Shape
+	if shape.MachineArch == nil && req.Inputs.Shape.MachineArch != nil &&
+		req.State.EffectiveMachineArch != nil && *req.State.EffectiveMachineArch == *req.Inputs.Shape.MachineArch {
+		shape.MachineArch = req.Inputs.Shape.MachineArch
+	}
+	if shape.OS == nil && req.Inputs.Shape.OS != nil &&
+		req.State.EffectiveOS != nil && *req.State.EffectiveOS == *req.Inputs.Shape.OS {
+		shape.OS = req.Inputs.Shape.OS
+	}
+	old.Shape = shape
+	return diffArgs(old, req.Inputs), nil
 }
 
 // regionForState is the region Read, Update and Delete must talk to: the one
@@ -191,6 +220,10 @@ func (s *InstanceState) Annotate(ann infer.Annotator) {
 	ann.Describe(&s.Services, "Service endpoints reported by the instance.")
 	ann.Describe(&s.EffectiveRegion, "The region the instance actually runs in (the resource region, else the provider "+
 		"region at creation time). Later operations always use this region.")
+	ann.Describe(&s.EffectiveMachineArch, "The CPU architecture the platform reports for the instance. Declaring "+
+		"shape.machineArch with this value never plans a change, even on an imported instance.")
+	ann.Describe(&s.EffectiveOS, "The operating system the platform reports for the instance. Declaring "+
+		"shape.os with this value never plans a change, even on an imported instance.")
 }
 
 // Timing knobs for readiness polling. Variables so tests can shorten them.
@@ -363,6 +396,9 @@ func (r *Instance) Read(
 		&computev1.DescribeInstanceRequest{InstanceId: req.ID}, &res)
 	if err != nil {
 		if isNotFound(err) {
+			if err := notFoundOnImport("instance", req.ID, req.Inputs, req.State); err != nil {
+				return resp{}, err
+			}
 			return resp{}, nil
 		}
 		return resp{}, fmt.Errorf("read instance %q: %w", req.ID, err)
@@ -370,6 +406,9 @@ func (r *Instance) Read(
 	md := res.GetMetadata()
 	if md.GetStatus() == computev1.InstanceMetadata_DESTROYED || md.GetDestroyedAt() != nil {
 		// Deadline reached or destroyed out of band: the resource is gone.
+		if err := notFoundOnImport("instance", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	state := req.State
@@ -538,6 +577,12 @@ func applyInstance(state *InstanceState, res *computev1.DescribeInstanceResponse
 	state.ReadyAt = formatTimestamp(md.GetReadyAt())
 	state.ExpiresAt = formatTimestamp(md.GetDeadline())
 	state.Status = md.GetStatus().String()
+	if arch := md.GetShape().GetMachineArch(); arch != "" {
+		state.EffectiveMachineArch = ptr(arch)
+	}
+	if osName := md.GetShape().GetOs(); osName != "" {
+		state.EffectiveOS = ptr(osName)
+	}
 	state.InstanceURL = res.GetInstanceUrl()
 	state.IngressDomain = md.GetIngressDomain()
 	// Never nil: a nil slice is encoded as absent and then fails to decode as a

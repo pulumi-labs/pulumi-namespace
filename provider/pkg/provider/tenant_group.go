@@ -157,6 +157,9 @@ func (r *TenantGroup) Read(
 	}
 	d, err := describeGroup(ctx, c, req.ID)
 	if isNotFound(err) {
+		if err := notFoundOnImport("tenant group", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	if err != nil {

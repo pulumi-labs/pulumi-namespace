@@ -24,6 +24,10 @@ type Instance struct {
 	Deadline pulumi.StringPtrOutput `pulumi:"deadline"`
 	// Free-form note on why the instance exists. Changing it replaces the instance.
 	DocumentedPurpose pulumi.StringPtrOutput `pulumi:"documentedPurpose"`
+	// The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+	EffectiveMachineArch pulumi.StringPtrOutput `pulumi:"effectiveMachineArch"`
+	// The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+	EffectiveOs pulumi.StringPtrOutput `pulumi:"effectiveOs"`
 	// The region the instance actually runs in (the resource region, else the provider region at creation time). Later operations always use this region.
 	EffectiveRegion pulumi.StringPtrOutput `pulumi:"effectiveRegion"`
 	// RFC3339 deadline currently enforced by the platform.
@@ -241,6 +245,16 @@ func (o InstanceOutput) Deadline() pulumi.StringPtrOutput {
 // Free-form note on why the instance exists. Changing it replaces the instance.
 func (o InstanceOutput) DocumentedPurpose() pulumi.StringPtrOutput {
 	return o.ApplyT(func(v *Instance) pulumi.StringPtrOutput { return v.DocumentedPurpose }).(pulumi.StringPtrOutput)
+}
+
+// The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+func (o InstanceOutput) EffectiveMachineArch() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *Instance) pulumi.StringPtrOutput { return v.EffectiveMachineArch }).(pulumi.StringPtrOutput)
+}
+
+// The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+func (o InstanceOutput) EffectiveOs() pulumi.StringPtrOutput {
+	return o.ApplyT(func(v *Instance) pulumi.StringPtrOutput { return v.EffectiveOs }).(pulumi.StringPtrOutput)
 }
 
 // The region the instance actually runs in (the resource region, else the provider region at creation time). Later operations always use this region.

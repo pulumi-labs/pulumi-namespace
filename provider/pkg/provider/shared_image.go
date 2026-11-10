@@ -174,6 +174,9 @@ func (r *SharedImage) Read(
 		return resp{}, fmt.Errorf("read shared image %q: %w", req.ID, err)
 	}
 	if s == nil {
+		if err := notFoundOnImport("shared image", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	var state SharedImageState

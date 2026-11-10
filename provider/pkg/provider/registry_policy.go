@@ -247,6 +247,9 @@ func (r *RegistryDefaultPolicy) Read(
 	}
 	cur, err := getDefaultPolicy(ctx, c)
 	if isNotFound(err) {
+		if err := notFoundOnImport("registry default policy", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	if err != nil {
@@ -418,6 +421,9 @@ func (r *RegistryRepositoryPolicy) Read(
 	}
 	cur, err := getRepoPolicy(ctx, c, req.ID)
 	if isNotFound(err) {
+		if err := notFoundOnImport("registry repository policy", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	if err != nil {

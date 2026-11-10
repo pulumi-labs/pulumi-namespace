@@ -255,6 +255,9 @@ func (r *InstanceIngress) Read(
 	}
 	all, err := listIngresses(ctx, c, instanceID)
 	if isNotFound(err) {
+		if err := notFoundOnImport("instance ingress", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil // the instance is gone, and its ingresses with it
 	}
 	if err != nil {
@@ -268,6 +271,9 @@ func (r *InstanceIngress) Read(
 		}
 	}
 	if got == nil {
+		if err := notFoundOnImport("instance ingress", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	state := req.State
