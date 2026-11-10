@@ -16,6 +16,7 @@ package provider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/pulumi/pulumi-go-provider/infer"
@@ -50,6 +51,10 @@ func readLookup[A, S any](
 ) (S, error) {
 	var zero S
 	res, err := read(ctx, infer.ReadRequest[A, S]{ID: id})
+	var inf *importNotFoundError
+	if errors.As(err, &inf) {
+		return zero, errLookupNotFound(kind, id)
+	}
 	if err != nil {
 		return zero, err
 	}

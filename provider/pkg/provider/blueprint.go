@@ -194,6 +194,9 @@ func (r *Blueprint) Read(
 	}
 	b, err := fetchBlueprint(ctx, c, req.ID)
 	if isNotFound(err) || (err == nil && b == nil) {
+		if err := notFoundOnImport("blueprint", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	if err != nil {

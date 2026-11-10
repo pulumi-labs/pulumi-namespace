@@ -325,6 +325,9 @@ func (r *EgressPolicy) Read(
 	}
 	res, err := getEgress(ctx, c, req.ID)
 	if isNotFound(err) {
+		if err := notFoundOnImport("egress policy", req.ID, req.Inputs, req.State); err != nil {
+			return infer.ReadResponse[EgressPolicyArgs, EgressPolicyState]{}, err
+		}
 		return infer.ReadResponse[EgressPolicyArgs, EgressPolicyState]{}, nil
 	}
 	if err != nil {

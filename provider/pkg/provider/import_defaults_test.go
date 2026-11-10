@@ -86,3 +86,77 @@ func TestGithubProfile_ImportKeepsPlatformDefaultsOutOfInputs(t *testing.T) {
 	assert.Equal(t, "USE_LOCAL_CACHE", str(read.Inputs, "builderMode"))
 	assert.Equal(t, "windows", str(read.Inputs.Get("instanceShape").AsMap(), "os"))
 }
+
+// #1677, the inverse of #1571: a program that DECLARES shape.machineArch and
+// shape.os with the values the platform reports must plan no change after an
+// import, and a different declared value must still replace.
+func TestInstance_ImportThenProgramDeclaringPlatformShapePlansNoChange(t *testing.T) {
+	f := newFakeAPI(t)
+	f.ok(computeSvc+"DescribeInstance", instanceJSON("RUNNING", "2030-01-01T00:00:00Z"))
+	s := newServerFor(t, f)
+	read, err := s.Read(pgp.ReadRequest{ID: "inst-1", Urn: urn("Instance", "i")})
+	require.NoError(t, err)
+	require.Equal(t, "amd64", read.Properties.Get("effectiveMachineArch").AsString())
+	require.Equal(t, "linux", read.Properties.Get("effectiveOs").AsString())
+
+	program := func(arch, osName any) property.Map {
+		shape := map[string]property.Value{"virtualCpu": property.New(2.0), "memoryMegabytes": property.New(4096.0)}
+		if arch != nil {
+			shape["machineArch"] = property.New(arch.(string))
+		}
+		if osName != nil {
+			shape["os"] = property.New(osName.(string))
+		}
+		return property.NewMap(map[string]property.Value{
+			"shape": property.New(property.NewMap(shape)), "documentedPurpose": property.New("ci"),
+			"deadline": property.New("2030-01-01T00:00:00Z"),
+		})
+	}
+	diff := func(in property.Map) pgp.DiffResponse {
+		d, err := s.Diff(pgp.DiffRequest{Urn: urn("Instance", "i"), ID: "inst-1", State: read.Properties, Inputs: in, OldInputs: read.Inputs})
+		require.NoError(t, err)
+		return d
+	}
+	// All four declared-or-not combinations of the program that created it.
+	for _, tc := range []struct{ arch, os any }{{nil, nil}, {"amd64", nil}, {nil, "linux"}, {"amd64", "linux"}} {
+		lcNoChange(t, diff(program(tc.arch, tc.os)), "declaring the platform's own shape values is no change")
+	}
+	// A different value still replaces.
+	for _, tc := range []struct{ arch, os any }{{"arm64", nil}, {nil, "windows"}, {"amd64", "windows"}} {
+		d := diff(program(tc.arch, tc.os))
+		require.True(t, d.HasChanges)
+		require.Equal(t, pgp.UpdateReplace, d.DetailedDiff["shape"].Kind)
+	}
+}
+
+// #1691: cacheVolumeSettings[].volumeTag is deprecated, ignored and never sent, and an import cannot read it
+// back, so a program that still declares it must plan no change after an import.
+func TestGithubProfile_ImportThenProgramWithVolumeTagPlansNoChange(t *testing.T) {
+	f := newFakeAPI(t)
+	profile := `{"profileId":"p-1","version":"3","spec":{"tag":"fast","instanceShape":{"virtualCpu":2,"memoryMegabytes":4096,"os":"linux","machineArch":"amd64"},` +
+		`"cacheVolumeSettings":[{"volumeSizeGb":20}]}}`
+	f.ok(ghProfileSvc+"ListProfiles", `{"profiles":[`+profile+`]}`)
+	s := newServerFor(t, f)
+	read, err := s.Read(pgp.ReadRequest{ID: "p-1", Urn: urn("GithubProfile", "p")})
+	require.NoError(t, err)
+
+	program := func(tag, size any) property.Map {
+		vol := map[string]any{"volumeSizeGb": size}
+		if tag != nil {
+			vol["volumeTag"] = tag
+		}
+		return pm(map[string]any{
+			"tag": "fast", "instanceShape": map[string]any{"virtualCpu": 2, "memoryMegabytes": 4096, "machineArch": "amd64"},
+			"cacheVolumeSettings": []any{vol},
+		})
+	}
+	diff := func(in property.Map) pgp.DiffResponse {
+		d, err := s.Diff(pgp.DiffRequest{Urn: urn("GithubProfile", "p"), ID: "p-1", State: read.Properties, Inputs: in, OldInputs: read.Inputs})
+		require.NoError(t, err)
+		return d
+	}
+	lcNoChange(t, diff(program("ignored-tag", 20)), "a declared volumeTag is ignored")
+	lcNoChange(t, diff(program(nil, 20)), "omitting volumeTag is clean")
+	// Real differences still show.
+	require.True(t, diff(program("ignored-tag", 40)).HasChanges)
+}

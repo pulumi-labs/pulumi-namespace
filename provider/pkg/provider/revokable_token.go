@@ -217,6 +217,9 @@ func (r *RevokableToken) Read(
 	if t == nil || t.GetState() == iamv1.RevokableToken_REVOKED || t.GetState() == iamv1.RevokableToken_EXPIRED {
 		// Revoked and expired tokens are unusable: report gone so the token is
 		// recreated instead of lingering in state as healthy.
+		if err := notFoundOnImport("revokable token", req.ID, req.Inputs, req.State); err != nil {
+			return resp{}, err
+		}
 		return resp{}, nil
 	}
 	imported := req.State.TokenID == ""

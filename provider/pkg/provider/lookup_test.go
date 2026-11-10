@@ -303,9 +303,11 @@ func TestLifecycle_RevokableTokenImport(t *testing.T) {
 	assert.False(t, lcHas(bi.Inputs, "grants"))
 	lcNoChange(t, lcDiff(t, s, typ, bare.ID, bi.Properties, pm(map[string]any{"name": "bare"})), "no-op diff after import without grants")
 
-	// Revoked and expired tokens still read as gone on import.
+	// Revoked and expired tokens are gone: an import fails (#1715), a refresh drops them.
 	f.with(func() { f.tokens[0].tok.State = iamv1.RevokableToken_EXPIRED })
-	r, err := s.Read(pgp.ReadRequest{ID: created.ID, Urn: urn(typ, "r"), Properties: property.NewMap(nil), Inputs: property.NewMap(nil)})
+	_, err := s.Read(pgp.ReadRequest{ID: created.ID, Urn: urn(typ, "r"), Properties: property.NewMap(nil), Inputs: property.NewMap(nil)})
+	require.ErrorContains(t, err, "does not exist")
+	r, err := s.Read(pgp.ReadRequest{ID: created.ID, Urn: urn(typ, "r"), Properties: property.NewMap(map[string]property.Value{"tokenId": property.New(created.ID)}), Inputs: property.NewMap(nil)})
 	require.NoError(t, err)
 	assert.Empty(t, r.ID)
 }
@@ -476,7 +478,7 @@ func TestLifecycle_InstanceIngress(t *testing.T) {
 	lcKind(t, typ, lcDiff(t, s, typ, created.ID, imp.Properties, lcWith(in, map[string]any{"name": "other"})), "name", pgp.UpdateReplace)
 	us := lcServer(t, f, "us") // provider region differs from the instance's region
 	_, err := us.Read(pgp.ReadRequest{ID: created.ID, Urn: urn(typ, "r"), Properties: property.NewMap(nil), Inputs: property.NewMap(nil)})
-	require.NoError(t, err)
+	require.ErrorContains(t, err, "does not exist", "the instance is not in the provider's region, so an import by the bare ID cannot find it")
 	r3, err := us.Read(pgp.ReadRequest{ID: "eu/" + created.ID, Urn: urn(typ, "r"), Properties: property.NewMap(nil), Inputs: property.NewMap(nil)})
 	require.NoError(t, err)
 	assert.Equal(t, inst.ID+"/"+ingID, r3.ID, "the region prefix is not part of the resource ID")

@@ -53,6 +53,14 @@ export class Instance extends pulumi.CustomResource {
      */
     declare public readonly documentedPurpose: pulumi.Output<string | undefined>;
     /**
+     * The CPU architecture the platform reports for the instance. Declaring shape.machineArch with this value never plans a change, even on an imported instance.
+     */
+    declare public /*out*/ readonly effectiveMachineArch: pulumi.Output<string | undefined>;
+    /**
+     * The operating system the platform reports for the instance. Declaring shape.os with this value never plans a change, even on an imported instance.
+     */
+    declare public /*out*/ readonly effectiveOs: pulumi.Output<string | undefined>;
+    /**
      * The region the instance actually runs in (the resource region, else the provider region at creation time). Later operations always use this region.
      */
     declare public /*out*/ readonly effectiveRegion: pulumi.Output<string | undefined>;
@@ -123,6 +131,8 @@ export class Instance extends pulumi.CustomResource {
             resourceInputs["region"] = args?.region;
             resourceInputs["shape"] = args?.shape;
             resourceInputs["createdAt"] = undefined /*out*/;
+            resourceInputs["effectiveMachineArch"] = undefined /*out*/;
+            resourceInputs["effectiveOs"] = undefined /*out*/;
             resourceInputs["effectiveRegion"] = undefined /*out*/;
             resourceInputs["expiresAt"] = undefined /*out*/;
             resourceInputs["ingressDomain"] = undefined /*out*/;
@@ -136,6 +146,8 @@ export class Instance extends pulumi.CustomResource {
             resourceInputs["createdAt"] = undefined /*out*/;
             resourceInputs["deadline"] = undefined /*out*/;
             resourceInputs["documentedPurpose"] = undefined /*out*/;
+            resourceInputs["effectiveMachineArch"] = undefined /*out*/;
+            resourceInputs["effectiveOs"] = undefined /*out*/;
             resourceInputs["effectiveRegion"] = undefined /*out*/;
             resourceInputs["expiresAt"] = undefined /*out*/;
             resourceInputs["ingressDomain"] = undefined /*out*/;

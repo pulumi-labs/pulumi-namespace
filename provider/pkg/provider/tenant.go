@@ -166,6 +166,9 @@ func (r *Tenant) Read(
 		return infer.ReadResponse[TenantArgs, TenantState]{}, fmt.Errorf("read tenant %q: %w", req.ID, err)
 	}
 	if t == nil {
+		if err := notFoundOnImport("tenant", req.ID, req.Inputs, req.State); err != nil {
+			return infer.ReadResponse[TenantArgs, TenantState]{}, err
+		}
 		return infer.ReadResponse[TenantArgs, TenantState]{}, nil
 	}
 	state := req.State

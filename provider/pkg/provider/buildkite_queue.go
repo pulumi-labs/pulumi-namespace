@@ -331,6 +331,9 @@ func (r *BuildkiteQueue) Read(
 	err = c.call(ctx, c.endpoints.globalURL(), buildkiteQueueService, "GetQueue",
 		&buildkitev1.GetQueueRequest{QueueId: req.ID}, &res)
 	if isNotFound(err) || (err == nil && res.GetQueue() == nil) {
+		if err := notFoundOnImport("buildkite queue", req.ID, req.Inputs, req.State); err != nil {
+			return infer.ReadResponse[BuildkiteQueueArgs, BuildkiteQueueState]{}, err
+		}
 		return infer.ReadResponse[BuildkiteQueueArgs, BuildkiteQueueState]{}, nil
 	}
 	if err != nil {

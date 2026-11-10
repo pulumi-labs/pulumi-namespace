@@ -120,12 +120,18 @@ func (r *VaultObject) Read(
 		&vaultv1.DescribeObjectRequest{ObjectId: req.ID}, &res)
 	if err != nil {
 		if isNotFound(err) {
+			if err := notFoundOnImport("vault object", req.ID, req.Inputs, req.State); err != nil {
+				return infer.ReadResponse[VaultObjectArgs, VaultObjectState]{}, err
+			}
 			return infer.ReadResponse[VaultObjectArgs, VaultObjectState]{}, nil
 		}
 		return infer.ReadResponse[VaultObjectArgs, VaultObjectState]{}, fmt.Errorf("read vault object %q: %w", req.ID, err)
 	}
 	md := res.GetMetadata()
 	if md.GetDeletedAt() != nil {
+		if err := notFoundOnImport("vault object", req.ID, req.Inputs, req.State); err != nil {
+			return infer.ReadResponse[VaultObjectArgs, VaultObjectState]{}, err
+		}
 		return infer.ReadResponse[VaultObjectArgs, VaultObjectState]{}, nil
 	}
 
