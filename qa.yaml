@@ -117,6 +117,7 @@ functions:
   - name: getVolumes
     test: true
 regressions:
+  - "#1805 #1806 Tenant create and getTenants/getTenantGroups on an account that is not allowed to manage tenants fail with HTTP 400 and an error that names the likely cause (token account not enabled for tenant management) and keeps the rid; on an account that can manage tenants, Tenant create, getTenants and getTenantGroups succeed. Report the exact error on the mirror if they still fail"
   - "#1715 pulumi import of an ID that does not exist (for example namespace:index:Tenant t nope, Instance, EgressPolicy) fails with 'does not exist' and leaves nothing in state; a refresh of a resource deleted outside Pulumi still drops it from state"
   - "#1691 GithubProfile import with cacheVolumeSettings[].volumeTag declared in the program: preview --expect-no-changes is clean (volumeTag is deprecated and ignored)"
   - "#1677 (inverse of #1571) import an instance whose program declares shape.machineArch and shape.os: pulumi preview --expect-no-changes plans no change, as it does for a program that omits them; declaring a different machineArch still plans a replace"

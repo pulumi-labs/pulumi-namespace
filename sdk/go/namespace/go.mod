@@ -1,6 +1,6 @@
 module github.com/pulumi-labs/pulumi-namespace/sdk/go/namespace
 
-go 1.27.3
+go 1.27.4
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
