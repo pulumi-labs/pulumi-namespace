@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-11-11
+
+### Changed
+
+- API errors that give no reason are now actionable. The tenant APIs (`CreateTenant`, `ListTenants`, `ListTenantGroups` and the rest of `TenantService`) answer a token that is not enabled for tenant management with HTTP 400 `invalid_argument: unspecified message (rid=...)`; the provider now names the likely cause (the token's account may not be enabled for tenant management; the API does not confirm it) rather than leaving only the placeholder, keeps the `rid`, and prints any Connect error `details` the API attaches. `ListTenantGroupsRequest` has no fields at all, so the failure of `getTenantGroups` cannot be a request-shape problem. The request bodies are unchanged. Mirror issues https://github.com/pulumi-labs/pulumi-namespace/issues/12 and https://github.com/pulumi-labs/pulumi-namespace/issues/13 (#1805, #1806).
+
 ## [0.2.1] - 2026-11-10
 
 ### Changed

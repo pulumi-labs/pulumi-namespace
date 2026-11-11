@@ -107,6 +107,8 @@ Create polls DescribeInstance every 2 seconds for up to 10 minutes until the ins
 
 An IAM tenant: an isolated account with its own policies.
 
+> If `Tenant`, `TenantGroup`, `getTenants` or `getTenantGroups` fail with HTTP 400 `invalid_argument: unspecified message (rid=...)`, the API gave no reason. The request is not at fault for the list calls (they send no required fields), so check that the token belongs to an account that may manage tenants, and quote the `rid` when contacting Namespace support.
+
 | Input | Type | Notes |
 |---|---|---|
 | `visibleName` | string | Updates in place. |

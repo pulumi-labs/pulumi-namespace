@@ -59,12 +59,17 @@ const (
 )
 
 // APIError is a Connect error: a stable lowercase code plus a message, together
-// with the HTTP status the server answered with.
+// with the HTTP status the server answered with. Details holds the readable
+// form of any Connect error details the server attached (a Connect error body
+// may carry them next to the message), and Hint is guidance the provider adds
+// when the API gave no usable reason.
 type APIError struct {
 	Method     string
 	HTTPStatus int
 	Code       string
 	Message    string
+	Details    []string
+	Hint       string
 }
 
 func (e *APIError) Error() string {
@@ -72,10 +77,50 @@ func (e *APIError) Error() string {
 	if code == "" {
 		code = http.StatusText(e.HTTPStatus)
 	}
+	var msg string
 	if e.Message == "" {
-		return fmt.Sprintf("namespace: %s failed: %s (HTTP %d)", e.Method, code, e.HTTPStatus)
+		msg = fmt.Sprintf("namespace: %s failed: %s (HTTP %d)", e.Method, code, e.HTTPStatus)
+	} else {
+		msg = fmt.Sprintf("namespace: %s failed: %s: %s (HTTP %d)", e.Method, code, e.Message, e.HTTPStatus)
 	}
-	return fmt.Sprintf("namespace: %s failed: %s: %s (HTTP %d)", e.Method, code, e.Message, e.HTTPStatus)
+	if len(e.Details) > 0 {
+		msg += "; details: " + strings.Join(e.Details, "; ")
+	}
+	if e.Hint != "" {
+		msg += ". " + e.Hint
+	}
+	return msg
+}
+
+// tenantMethods are the TenantService RPCs. The API answers them with a
+// generic invalid_argument ("unspecified message") for a token whose account is
+// not enabled for tenant management, so the error names that likely cause (#1805, #1806).
+var tenantMethods = map[string]bool{
+	"CreateTenant": true, "GetTenant": true, "ListTenants": true, "DeleteTenant": true,
+	"UpdateTenant": true, "ListTenantGroups": true, "CreateTenantGroup": true,
+	"GetTenantGroup": true, "UpdateTenantGroup": true, "DeleteTenantGroup": true,
+	"ListTenantMembers": true, "ListTenantPolicies": true,
+}
+
+// isUnspecified reports whether a Connect error message carries no reason: it
+// is empty, or the API's placeholder "unspecified message (rid=...)".
+func isUnspecified(msg string) bool {
+	msg = strings.TrimSpace(msg)
+	return msg == "" || strings.HasPrefix(msg, "unspecified message")
+}
+
+// hintFor explains an error whose message gives no reason.
+func hintFor(method, code, message string) string {
+	if code != "invalid_argument" || !isUnspecified(message) {
+		return ""
+	}
+	if tenantMethods[method] {
+		return "The API gave no reason for rejecting the request. For the tenant APIs a likely cause is that the token's " +
+			"account is not enabled for tenant management (not confirmed: the API does not say) rather than a malformed " +
+			"request: the provider sends only the documented fields of " + method + ". Check that the token was issued " +
+			"by an account that can manage tenants, and quote the rid (if the message has one) when asking Namespace support"
+	}
+	return "The API gave no reason for rejecting the request; quote the rid (if the message has one) when asking Namespace support"
 }
 
 // IsNotFound reports whether the API said the target does not exist.
@@ -216,10 +261,23 @@ func parseAPIError(method string, status int, raw []byte) *APIError {
 	var payload struct {
 		Code    string `json:"code"`
 		Message string `json:"message"`
+		Details []struct {
+			Type  string          `json:"type"`
+			Debug json.RawMessage `json:"debug"`
+		} `json:"details"`
 	}
 	if json.Unmarshal(raw, &payload) == nil {
 		ae.Code = payload.Code
 		ae.Message = payload.Message
+		for _, d := range payload.Details {
+			dbg := strings.TrimSpace(string(d.Debug))
+			switch {
+			case dbg != "" && dbg != "null":
+				ae.Details = append(ae.Details, strings.TrimSpace(d.Type+" "+dbg))
+			case d.Type != "":
+				ae.Details = append(ae.Details, d.Type)
+			}
+		}
 	}
 	if ae.Code == "" {
 		switch status {
@@ -231,6 +289,7 @@ func parseAPIError(method string, status int, raw []byte) *APIError {
 			ae.Code = "permission_denied"
 		}
 	}
+	ae.Hint = hintFor(method, ae.Code, ae.Message)
 	return ae
 }
 
