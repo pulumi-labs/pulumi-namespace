@@ -111,6 +111,14 @@ func isUnspecified(msg string) bool {
 
 // hintFor explains an error whose message gives no reason.
 func hintFor(method, code, message string) string {
+	if code == "unauthenticated" && tenantMethods[method] {
+		// A token that works for other Namespace APIs can still be refused here
+		// (#1877). The API gives no cause, so say what is likely, not what is known.
+		return "The tenant APIs rejected the token as unauthenticated. If the same token works for other Namespace APIs, " +
+			"the account is likely not enabled for tenant management or the token lacks tenant scope (not confirmed: " +
+			"the API does not say). Check that the token was issued by an account that can manage tenants, and quote the " +
+			"rid (if the message has one) when asking Namespace support"
+	}
 	if code != "invalid_argument" || !isUnspecified(message) {
 		return ""
 	}

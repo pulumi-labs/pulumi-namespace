@@ -23,6 +23,7 @@ import (
 
 	pgp "github.com/pulumi/pulumi-go-provider"
 	"github.com/pulumi/pulumi-go-provider/infer"
+	"github.com/pulumi/pulumi/sdk/v3/go/property"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
@@ -152,8 +153,92 @@ func checkWith[I any](
 	if err != nil {
 		return infer.CheckResponse[I]{}, err
 	}
-	failures = append(failures, validate(args)...)
+	failures = append(failures, dropUnknownFailures(validate(args), req.NewInputs)...)
 	return infer.CheckResponse[I]{Inputs: args, Failures: failures}, nil
+}
+
+// unknownPaths lists the property paths ("a.b", "tags[1].key") that hold a preview-time
+// unknown anywhere at or below them. infer decodes an unknown into its zero value, so a
+// validator that looked at it would reject a program that wires an output of another
+// resource into an input (instanceId: ${instance.instanceId}), which is the normal way to
+// use most resources here (#1832).
+func unknownPaths(v property.Value, path string, out map[string]bool) {
+	switch {
+	case v.IsComputed():
+		out[path] = true
+	case v.IsMap():
+		for k, c := range v.AsMap().AsMap() {
+			p := k
+			if path != "" {
+				p = path + "." + k
+			}
+			unknownPaths(c, p, out)
+		}
+	case v.IsArray():
+		for i, c := range v.AsArray().AsSlice() {
+			unknownPaths(c, fmt.Sprintf("%s[%d]", path, i), out)
+		}
+	}
+}
+
+// pathCovers reports whether a is b or one of its ancestors (on a path boundary).
+func pathCovers(a, b string) bool {
+	return b == a || strings.HasPrefix(b, a+".") || strings.HasPrefix(b, a+"[")
+}
+
+// dropUnknownFailures removes the failures that are about a value which is not known yet:
+// a failure on a property that is unknown, sits below an unknown, or contains one (a list
+// whose element is computed cannot be judged as a whole). Known values are still validated
+// in full, also their siblings (tags[0].key next to an unknown tags[1].key), and the
+// apply-time Check sees every value. A failure named without an index ("tags.key") is
+// compared without indexes, which can only skip more.
+func dropUnknownFailures(failures []pgp.CheckFailure, inputs property.Map) []pgp.CheckFailure {
+	if len(failures) == 0 {
+		return failures
+	}
+	unknown := map[string]bool{}
+	unknownPaths(property.New(inputs), "", unknown)
+	delete(unknown, "")
+	if len(unknown) == 0 {
+		return failures
+	}
+	kept := failures[:0:0]
+	for _, f := range failures {
+		hit := false
+		for u := range unknown {
+			prop, uu := f.Property, u
+			if !strings.Contains(prop, "[") {
+				uu = stripIndexes(u)
+			}
+			if pathCovers(uu, prop) || pathCovers(prop, uu) {
+				hit = true
+				break
+			}
+		}
+		if !hit {
+			kept = append(kept, f)
+		}
+	}
+	return kept
+}
+
+// stripIndexes turns "a[0].b" into "a.b".
+func stripIndexes(p string) string {
+	var b strings.Builder
+	depth := 0
+	for _, r := range p {
+		switch {
+		case r == '[':
+			depth++
+		case r == ']':
+			if depth > 0 {
+				depth--
+			}
+		case depth == 0:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func fail(property, format string, a ...any) pgp.CheckFailure {

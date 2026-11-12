@@ -67,3 +67,31 @@ func TestParseAPIError_SurfacesConnectDetails(t *testing.T) {
 		}
 	}
 }
+
+// A 401 from a tenant RPC gets the tenant hint even when the token works elsewhere (#1877).
+func TestParseAPIError_TenantUnauthenticatedGetsHint(t *testing.T) {
+	for method := range tenantMethods {
+		for _, body := range []string{
+			`{"code":"unauthenticated","message":"unauthenticated (rid=r1)"}`,
+			``,
+		} {
+			e := parseAPIError(method, 401, []byte(body))
+			got := e.Error()
+			for _, want := range []string{"(HTTP 401)", "tenant management", "tenant scope", "not confirmed"} {
+				if !strings.Contains(got, want) {
+					t.Errorf("%s: error %q does not contain %q", method, got, want)
+				}
+			}
+			if body != "" && !strings.Contains(got, "rid=r1") {
+				t.Errorf("%s: error %q lost the rid", method, got)
+			}
+		}
+	}
+}
+
+func TestParseAPIError_NonTenantUnauthenticatedGetsNoHint(t *testing.T) {
+	e := parseAPIError("DescribeObject", 401, []byte(`{"code":"unauthenticated","message":"bad token"}`))
+	if e.Hint != "" || strings.Contains(e.Error(), "tenant") {
+		t.Errorf("non-tenant 401 must not get tenant guidance: %q", e.Error())
+	}
+}

@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.2.3] - 2026-11-12
+
+### Fixed
+
+- A tenant API call that Namespace answers with HTTP 401 `unauthenticated` now says what is likely wrong instead of only "unauthenticated": the token works for other Namespace APIs but the tenant APIs rejected it, so the account is probably not enabled for tenant management or the token lacks tenant scope (not confirmed, the API does not say). The `rid` is kept; other methods get no hint. Mirror issue https://github.com/pulumi-labs/pulumi-namespace/issues/17 (#1877). Not breaking.
+- A resource input wired from another resource's output is no longer rejected at preview (#1832). `InstanceIngress` with `instanceId: ${instance.instanceId}` failed with `must not be empty`, because Check validated the placeholder of a not yet known value. Every resource's Check now skips the validation of values that are unknown at preview (also nested ones) and still validates the known ones, so the ingress, blueprint, queue, token, tenant group and policy resources accept computed inputs. The final Check at apply time is unchanged.
+
 ## [0.2.2] - 2026-11-11
 
 ### Changed
