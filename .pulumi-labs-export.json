@@ -6,6 +6,6 @@
   "provider": "namespace",
   "skill_commit": "17da976cca658dfab4425a727e49859c44e2bdc1",
   "source_repo": "pulumi/autoregistry",
-  "source_sha": "5607f7729b08f1f7d218544aae93155e12e0c07c",
-  "source_version": "0.2.3"
+  "source_sha": "381ae46f72d86b90b042953e8c38b20789aa7650",
+  "source_version": "0.3.0"
 }

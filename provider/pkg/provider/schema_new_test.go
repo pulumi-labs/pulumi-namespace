@@ -96,7 +96,7 @@ func TestSchemaHasNewSurface(t *testing.T) {
 		}
 	}
 	for _, tok := range []string{"getGithubProfiles", "getTenantGroups", "getBlueprints", "getRegistryRepositories",
-		"getRegistryImages", "getUsage", "getVolumes", "getGithubJobs"} {
+		"getRegistryImages", "getUsage", "getVolumes", "getGithubJobs", "getRegistryImage", "getGithubJob"} {
 		if _, ok := spec.Functions["namespace:index:"+tok]; !ok {
 			t.Errorf("function %s missing", tok)
 		}

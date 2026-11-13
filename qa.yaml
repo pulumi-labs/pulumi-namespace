@@ -68,6 +68,8 @@ functions:
     test: true
   - name: getEgressPolicy
     test: true
+  - name: getGithubJob
+    test: true
   - name: getGithubJobs
     test: true
   - name: getGithubProfile
@@ -81,6 +83,8 @@ functions:
   - name: getInstances
     test: true
   - name: getRegistryDefaultPolicy
+    test: true
+  - name: getRegistryImage
     test: true
   - name: getRegistryImages
     test: true
@@ -117,6 +121,7 @@ functions:
   - name: getVolumes
     test: true
 regressions:
+  - "regression #1877: TenantGroup create (EnsureTenantGroup) on an account that is not enabled for tenant management fails with an error that names the likely cause (account not enabled for tenant management or token lacks tenant scope) and keeps the rid; the same hint appears for TenantGroup read, delete, Tenant destroy and getTenantPolicies. On an account that can manage tenants, TenantGroup create succeeds. Report the exact error on the mirror if the hint is missing"
   - "#1805 #1806 Tenant create and getTenants/getTenantGroups on an account that is not allowed to manage tenants fail with HTTP 400 and an error that names the likely cause (token account not enabled for tenant management) and keeps the rid; on an account that can manage tenants, Tenant create, getTenants and getTenantGroups succeed. Report the exact error on the mirror if they still fail"
   - "#1715 pulumi import of an ID that does not exist (for example namespace:index:Tenant t nope, Instance, EgressPolicy) fails with 'does not exist' and leaves nothing in state; a refresh of a resource deleted outside Pulumi still drops it from state"
   - "#1691 GithubProfile import with cacheVolumeSettings[].volumeTag declared in the program: preview --expect-no-changes is clean (volumeTag is deprecated and ignored)"

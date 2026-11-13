@@ -15,6 +15,7 @@ from .get_buildkite_queue import *
 from .get_buildkite_queues import *
 from .get_egress_policies import *
 from .get_egress_policy import *
+from .get_github_job import *
 from .get_github_jobs import *
 from .get_github_profile import *
 from .get_github_profiles import *
@@ -22,6 +23,7 @@ from .get_instance import *
 from .get_instance_ingress import *
 from .get_instances import *
 from .get_registry_default_policy import *
+from .get_registry_image import *
 from .get_registry_images import *
 from .get_registry_repositories import *
 from .get_registry_repository_policy import *

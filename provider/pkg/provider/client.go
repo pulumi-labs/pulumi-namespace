@@ -92,14 +92,13 @@ func (e *APIError) Error() string {
 	return msg
 }
 
-// tenantMethods are the TenantService RPCs. The API answers them with a
-// generic invalid_argument ("unspecified message") for a token whose account is
-// not enabled for tenant management, so the error names that likely cause (#1805, #1806).
-var tenantMethods = map[string]bool{
-	"CreateTenant": true, "GetTenant": true, "ListTenants": true, "DeleteTenant": true,
-	"UpdateTenant": true, "ListTenantGroups": true, "CreateTenantGroup": true,
-	"GetTenantGroup": true, "UpdateTenantGroup": true, "DeleteTenantGroup": true,
-	"ListTenantMembers": true, "ListTenantPolicies": true,
+// isTenantService reports whether service is one of the tenant APIs. The API
+// answers their RPCs with a generic invalid_argument ("unspecified message") or
+// unauthenticated for a token whose account is not enabled for tenant
+// management (#1805, #1806, #1877). The hint is decided by service, not by a
+// hand-kept method list, so a new tenant RPC cannot silently miss it.
+func isTenantService(service string) bool {
+	return service == tenantService || service == tenantMembershipService
 }
 
 // isUnspecified reports whether a Connect error message carries no reason: it
@@ -110,8 +109,8 @@ func isUnspecified(msg string) bool {
 }
 
 // hintFor explains an error whose message gives no reason.
-func hintFor(method, code, message string) string {
-	if code == "unauthenticated" && tenantMethods[method] {
+func hintFor(service, method, code, message string) string {
+	if code == "unauthenticated" && isTenantService(service) {
 		// A token that works for other Namespace APIs can still be refused here
 		// (#1877). The API gives no cause, so say what is likely, not what is known.
 		return "The tenant APIs rejected the token as unauthenticated. If the same token works for other Namespace APIs, " +
@@ -122,7 +121,7 @@ func hintFor(method, code, message string) string {
 	if code != "invalid_argument" || !isUnspecified(message) {
 		return ""
 	}
-	if tenantMethods[method] {
+	if isTenantService(service) {
 		return "The API gave no reason for rejecting the request. For the tenant APIs a likely cause is that the token's " +
 			"account is not enabled for tenant management (not confirmed: the API does not say) rather than a malformed " +
 			"request: the provider sends only the documented fields of " + method + ". Check that the token was issued " +
@@ -251,7 +250,7 @@ func (c *nsClient) call(ctx context.Context, baseURL, service, method string, re
 		return fmt.Errorf("namespace: %s response exceeds the %d byte limit", method, c.responseCap())
 	}
 	if hres.StatusCode != http.StatusOK {
-		return parseAPIError(method, hres.StatusCode, raw)
+		return parseAPIError(service, method, hres.StatusCode, raw)
 	}
 	if resp == nil || len(bytes.TrimSpace(raw)) == 0 {
 		return nil
@@ -264,7 +263,7 @@ func (c *nsClient) call(ctx context.Context, baseURL, service, method string, re
 
 // parseAPIError decodes a Connect error body {"code": "...", "message": "..."}.
 // Non-JSON bodies (proxies, gateways) fall back to the HTTP status alone.
-func parseAPIError(method string, status int, raw []byte) *APIError {
+func parseAPIError(service, method string, status int, raw []byte) *APIError {
 	ae := &APIError{Method: method, HTTPStatus: status}
 	var payload struct {
 		Code    string `json:"code"`
@@ -297,7 +296,7 @@ func parseAPIError(method string, status int, raw []byte) *APIError {
 			ae.Code = "permission_denied"
 		}
 	}
-	ae.Hint = hintFor(method, ae.Code, ae.Message)
+	ae.Hint = hintFor(service, method, ae.Code, ae.Message)
 	return ae
 }
 

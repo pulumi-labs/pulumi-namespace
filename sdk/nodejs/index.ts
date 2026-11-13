@@ -50,6 +50,11 @@ export const getEgressPolicy: typeof import("./getEgressPolicy").getEgressPolicy
 export const getEgressPolicyOutput: typeof import("./getEgressPolicy").getEgressPolicyOutput = null as any;
 utilities.lazyLoad(exports, ["getEgressPolicy","getEgressPolicyOutput"], () => require("./getEgressPolicy"));
 
+export { GetGithubJobArgs, GetGithubJobResult, GetGithubJobOutputArgs } from "./getGithubJob";
+export const getGithubJob: typeof import("./getGithubJob").getGithubJob = null as any;
+export const getGithubJobOutput: typeof import("./getGithubJob").getGithubJobOutput = null as any;
+utilities.lazyLoad(exports, ["getGithubJob","getGithubJobOutput"], () => require("./getGithubJob"));
+
 export { GetGithubJobsArgs, GetGithubJobsResult, GetGithubJobsOutputArgs } from "./getGithubJobs";
 export const getGithubJobs: typeof import("./getGithubJobs").getGithubJobs = null as any;
 export const getGithubJobsOutput: typeof import("./getGithubJobs").getGithubJobsOutput = null as any;
@@ -84,6 +89,11 @@ export { GetRegistryDefaultPolicyArgs, GetRegistryDefaultPolicyResult } from "./
 export const getRegistryDefaultPolicy: typeof import("./getRegistryDefaultPolicy").getRegistryDefaultPolicy = null as any;
 export const getRegistryDefaultPolicyOutput: typeof import("./getRegistryDefaultPolicy").getRegistryDefaultPolicyOutput = null as any;
 utilities.lazyLoad(exports, ["getRegistryDefaultPolicy","getRegistryDefaultPolicyOutput"], () => require("./getRegistryDefaultPolicy"));
+
+export { GetRegistryImageArgs, GetRegistryImageResult, GetRegistryImageOutputArgs } from "./getRegistryImage";
+export const getRegistryImage: typeof import("./getRegistryImage").getRegistryImage = null as any;
+export const getRegistryImageOutput: typeof import("./getRegistryImage").getRegistryImageOutput = null as any;
+utilities.lazyLoad(exports, ["getRegistryImage","getRegistryImageOutput"], () => require("./getRegistryImage"));
 
 export { GetRegistryImagesArgs, GetRegistryImagesResult, GetRegistryImagesOutputArgs } from "./getRegistryImages";
 export const getRegistryImages: typeof import("./getRegistryImages").getRegistryImages = null as any;
