@@ -21,6 +21,8 @@ import com.pulumi.labs.namespace.inputs.GetEgressPoliciesArgs;
 import com.pulumi.labs.namespace.inputs.GetEgressPoliciesPlainArgs;
 import com.pulumi.labs.namespace.inputs.GetEgressPolicyArgs;
 import com.pulumi.labs.namespace.inputs.GetEgressPolicyPlainArgs;
+import com.pulumi.labs.namespace.inputs.GetGithubJobArgs;
+import com.pulumi.labs.namespace.inputs.GetGithubJobPlainArgs;
 import com.pulumi.labs.namespace.inputs.GetGithubJobsArgs;
 import com.pulumi.labs.namespace.inputs.GetGithubJobsPlainArgs;
 import com.pulumi.labs.namespace.inputs.GetGithubProfileArgs;
@@ -35,6 +37,8 @@ import com.pulumi.labs.namespace.inputs.GetInstancesArgs;
 import com.pulumi.labs.namespace.inputs.GetInstancesPlainArgs;
 import com.pulumi.labs.namespace.inputs.GetRegistryDefaultPolicyArgs;
 import com.pulumi.labs.namespace.inputs.GetRegistryDefaultPolicyPlainArgs;
+import com.pulumi.labs.namespace.inputs.GetRegistryImageArgs;
+import com.pulumi.labs.namespace.inputs.GetRegistryImagePlainArgs;
 import com.pulumi.labs.namespace.inputs.GetRegistryImagesArgs;
 import com.pulumi.labs.namespace.inputs.GetRegistryImagesPlainArgs;
 import com.pulumi.labs.namespace.inputs.GetRegistryRepositoriesArgs;
@@ -75,6 +79,7 @@ import com.pulumi.labs.namespace.outputs.GetBuildkiteQueueResult;
 import com.pulumi.labs.namespace.outputs.GetBuildkiteQueuesResult;
 import com.pulumi.labs.namespace.outputs.GetEgressPoliciesResult;
 import com.pulumi.labs.namespace.outputs.GetEgressPolicyResult;
+import com.pulumi.labs.namespace.outputs.GetGithubJobResult;
 import com.pulumi.labs.namespace.outputs.GetGithubJobsResult;
 import com.pulumi.labs.namespace.outputs.GetGithubProfileResult;
 import com.pulumi.labs.namespace.outputs.GetGithubProfilesResult;
@@ -82,6 +87,7 @@ import com.pulumi.labs.namespace.outputs.GetInstanceIngressResult;
 import com.pulumi.labs.namespace.outputs.GetInstanceResult;
 import com.pulumi.labs.namespace.outputs.GetInstancesResult;
 import com.pulumi.labs.namespace.outputs.GetRegistryDefaultPolicyResult;
+import com.pulumi.labs.namespace.outputs.GetRegistryImageResult;
 import com.pulumi.labs.namespace.outputs.GetRegistryImagesResult;
 import com.pulumi.labs.namespace.outputs.GetRegistryRepositoriesResult;
 import com.pulumi.labs.namespace.outputs.GetRegistryRepositoryPolicyResult;
@@ -367,6 +373,41 @@ public final class NamespaceFunctions {
      */
     public static CompletableFuture<GetEgressPolicyResult> getEgressPolicyPlain(GetEgressPolicyPlainArgs args, InvokeOptions options) {
         return Deployment.getInstance().invokeAsync("namespace:index:getEgressPolicy", TypeShape.of(GetEgressPolicyResult.class), args, Utilities.withVersion(options));
+    }
+    /**
+     * Reads one GitHub Actions job run on a Namespace runner by its GitHub job ID. Fails with &#34;was not found&#34; when Namespace has no such job. The runner and compute instance details the API also returns are not exposed.
+     * 
+     */
+    public static Output<GetGithubJobResult> getGithubJob(GetGithubJobArgs args) {
+        return getGithubJob(args, InvokeOptions.Empty);
+    }
+    /**
+     * Reads one GitHub Actions job run on a Namespace runner by its GitHub job ID. Fails with &#34;was not found&#34; when Namespace has no such job. The runner and compute instance details the API also returns are not exposed.
+     * 
+     */
+    public static CompletableFuture<GetGithubJobResult> getGithubJobPlain(GetGithubJobPlainArgs args) {
+        return getGithubJobPlain(args, InvokeOptions.Empty);
+    }
+    /**
+     * Reads one GitHub Actions job run on a Namespace runner by its GitHub job ID. Fails with &#34;was not found&#34; when Namespace has no such job. The runner and compute instance details the API also returns are not exposed.
+     * 
+     */
+    public static Output<GetGithubJobResult> getGithubJob(GetGithubJobArgs args, InvokeOptions options) {
+        return Deployment.getInstance().invoke("namespace:index:getGithubJob", TypeShape.of(GetGithubJobResult.class), args, Utilities.withVersion(options));
+    }
+    /**
+     * Reads one GitHub Actions job run on a Namespace runner by its GitHub job ID. Fails with &#34;was not found&#34; when Namespace has no such job. The runner and compute instance details the API also returns are not exposed.
+     * 
+     */
+    public static Output<GetGithubJobResult> getGithubJob(GetGithubJobArgs args, InvokeOutputOptions options) {
+        return Deployment.getInstance().invoke("namespace:index:getGithubJob", TypeShape.of(GetGithubJobResult.class), args, Utilities.withVersion(options));
+    }
+    /**
+     * Reads one GitHub Actions job run on a Namespace runner by its GitHub job ID. Fails with &#34;was not found&#34; when Namespace has no such job. The runner and compute instance details the API also returns are not exposed.
+     * 
+     */
+    public static CompletableFuture<GetGithubJobResult> getGithubJobPlain(GetGithubJobPlainArgs args, InvokeOptions options) {
+        return Deployment.getInstance().invokeAsync("namespace:index:getGithubJob", TypeShape.of(GetGithubJobResult.class), args, Utilities.withVersion(options));
     }
     /**
      * Lists GitHub Actions jobs run on Namespace runners, optionally filtered. Job and run IDs are int64 values returned as decimal strings.
@@ -682,6 +723,41 @@ public final class NamespaceFunctions {
      */
     public static CompletableFuture<GetRegistryDefaultPolicyResult> getRegistryDefaultPolicyPlain(GetRegistryDefaultPolicyPlainArgs args, InvokeOptions options) {
         return Deployment.getInstance().invokeAsync("namespace:index:getRegistryDefaultPolicy", TypeShape.of(GetRegistryDefaultPolicyResult.class), args, Utilities.withVersion(options));
+    }
+    /**
+     * Reads one image of the Namespace container registry by tag or digest. Fails with &#34;was not found&#34; when the image does not exist.
+     * 
+     */
+    public static Output<GetRegistryImageResult> getRegistryImage(GetRegistryImageArgs args) {
+        return getRegistryImage(args, InvokeOptions.Empty);
+    }
+    /**
+     * Reads one image of the Namespace container registry by tag or digest. Fails with &#34;was not found&#34; when the image does not exist.
+     * 
+     */
+    public static CompletableFuture<GetRegistryImageResult> getRegistryImagePlain(GetRegistryImagePlainArgs args) {
+        return getRegistryImagePlain(args, InvokeOptions.Empty);
+    }
+    /**
+     * Reads one image of the Namespace container registry by tag or digest. Fails with &#34;was not found&#34; when the image does not exist.
+     * 
+     */
+    public static Output<GetRegistryImageResult> getRegistryImage(GetRegistryImageArgs args, InvokeOptions options) {
+        return Deployment.getInstance().invoke("namespace:index:getRegistryImage", TypeShape.of(GetRegistryImageResult.class), args, Utilities.withVersion(options));
+    }
+    /**
+     * Reads one image of the Namespace container registry by tag or digest. Fails with &#34;was not found&#34; when the image does not exist.
+     * 
+     */
+    public static Output<GetRegistryImageResult> getRegistryImage(GetRegistryImageArgs args, InvokeOutputOptions options) {
+        return Deployment.getInstance().invoke("namespace:index:getRegistryImage", TypeShape.of(GetRegistryImageResult.class), args, Utilities.withVersion(options));
+    }
+    /**
+     * Reads one image of the Namespace container registry by tag or digest. Fails with &#34;was not found&#34; when the image does not exist.
+     * 
+     */
+    public static CompletableFuture<GetRegistryImageResult> getRegistryImagePlain(GetRegistryImagePlainArgs args, InvokeOptions options) {
+        return Deployment.getInstance().invokeAsync("namespace:index:getRegistryImage", TypeShape.of(GetRegistryImageResult.class), args, Utilities.withVersion(options));
     }
     /**
      * Lists images in the Namespace container registry, optionally limited to one repository. Deleted images are excluded.

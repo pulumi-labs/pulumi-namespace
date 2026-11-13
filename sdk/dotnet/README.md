@@ -161,9 +161,11 @@ A custom base image blueprint built from either `dockerfileContent` or an apt-ba
 - `namespace:index:getInstances` lists instances in a region, optionally filtered by `labels` and `includeDestroyed`. Pagination is handled for you.
 - `getGithubProfiles`, `getTenantGroups`, `getBlueprints`: list the corresponding objects.
 - `getRegistryRepositories`, `getRegistryImages` (optional `repository` filter): list registry contents.
+- `getRegistryImage`: one registry image by `repository` and `reference` (tag or digest); fails with `was not found` when it does not exist.
 - `getUsage`: compute usage between `periodStart` and `periodEnd` (YYYY-MM-DD) with instance and build minutes totals and a per-day breakdown.
 - `getVolumes`: cache volumes and persistent volumes in a region.
 - `getGithubJobs`: GitHub jobs with optional repository, conclusion and time filters, capped by `maxJobs`.
+- `getGithubJob`: one GitHub job by `jobId` (the number in the job URL); fails with `was not found` when Namespace has no such job.
 
 Every resource type also has a single-object lookup that reads the object by the ID the resource imports with, and fails with `... was not found` when it does not exist:
 

@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-13
+
+### Added
+
+- Lookups `getRegistryImage` (one registry image by repository and tag or digest, from `ContainerRegistryService.GetImage`) and `getGithubJob` (one GitHub Actions job by job ID, from `JobsService.DescribeJob`), the single-object counterparts of `getRegistryImages` and `getGithubJobs`. Both fail with `was not found` for a missing object. Additive, not breaking. `getGithubJob` omits the runner and compute instance details the API returns.
+
+### Fixed
+
+- The tenant-API error hint now covers every tenant RPC the provider sends (pulumi-labs/pulumi-namespace#17). The hint came from a hand-kept list of method names that held RPCs the provider never calls and missed `EnsureTenantGroup`, `DescribeTenantGroup`, `RemoveTenant` and `DescribePolicies`, so a `TenantGroup` create on an account not enabled for tenant management failed with a bare `unauthenticated`. The hint is now decided by the service (`TenantService` and `TenantMembershipService`), so any tenant RPC gets it. Error text only, nothing else changes. Not breaking.
+
 ## [0.2.3] - 2026-11-12
 
 ### Fixed

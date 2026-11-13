@@ -2790,6 +2790,78 @@
         "type": "object"
       }
     },
+    "namespace:index:getGithubJob": {
+      "description": "Reads one GitHub Actions job run on a Namespace runner by its GitHub job ID. Fails with \"was not found\" when Namespace has no such job. The runner and compute instance details the API also returns are not exposed.",
+      "inputs": {
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "GitHub job ID, the number in the job URL, as a decimal string."
+          }
+        },
+        "type": "object",
+        "required": [
+          "jobId"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "completedAt": {
+            "description": "RFC3339 completion time.",
+            "type": "string"
+          },
+          "conclusion": {
+            "description": "Job conclusion, empty while running.",
+            "type": "string"
+          },
+          "createdAt": {
+            "description": "RFC3339 creation time.",
+            "type": "string"
+          },
+          "jobId": {
+            "description": "GitHub job ID.",
+            "type": "string"
+          },
+          "jobName": {
+            "description": "Job name.",
+            "type": "string"
+          },
+          "ref": {
+            "description": "Git ref.",
+            "type": "string"
+          },
+          "repository": {
+            "description": "Repository.",
+            "type": "string"
+          },
+          "runId": {
+            "description": "GitHub workflow run ID.",
+            "type": "string"
+          },
+          "senderLogin": {
+            "description": "User that triggered the run.",
+            "type": "string"
+          },
+          "workflowName": {
+            "description": "Workflow name.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "runId",
+          "repository",
+          "workflowName",
+          "jobName",
+          "conclusion",
+          "ref",
+          "senderLogin",
+          "createdAt",
+          "completedAt"
+        ],
+        "type": "object"
+      }
+    },
     "namespace:index:getGithubJobs": {
       "description": "Lists GitHub Actions jobs run on Namespace runners, optionally filtered. Job and run IDs are int64 values returned as decimal strings.",
       "inputs": {
@@ -3191,6 +3263,71 @@
         },
         "required": [
           "revision"
+        ],
+        "type": "object"
+      }
+    },
+    "namespace:index:getRegistryImage": {
+      "description": "Reads one image of the Namespace container registry by tag or digest. Fails with \"was not found\" when the image does not exist.",
+      "inputs": {
+        "properties": {
+          "reference": {
+            "type": "string",
+            "description": "Tag, or digest of the form sha256:<hash>."
+          },
+          "repository": {
+            "type": "string",
+            "description": "Repository containing the image."
+          }
+        },
+        "type": "object",
+        "required": [
+          "repository",
+          "reference"
+        ]
+      },
+      "outputs": {
+        "properties": {
+          "createdAt": {
+            "description": "RFC3339 creation time.",
+            "type": "string"
+          },
+          "digest": {
+            "description": "Image digest.",
+            "type": "string"
+          },
+          "expiresAt": {
+            "description": "RFC3339 expiry time, empty if none.",
+            "type": "string"
+          },
+          "reference": {
+            "description": "The tag or digest that was looked up.",
+            "type": "string"
+          },
+          "repository": {
+            "description": "Repository name.",
+            "type": "string"
+          },
+          "tags": {
+            "description": "Tags pointing at the image.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "totalBytes": {
+            "description": "Total size in bytes, as a decimal string (int64).",
+            "type": "string"
+          }
+        },
+        "required": [
+          "repository",
+          "reference",
+          "digest",
+          "tags",
+          "createdAt",
+          "expiresAt",
+          "totalBytes"
         ],
         "type": "object"
       }

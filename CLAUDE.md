@@ -84,7 +84,7 @@ The module version string encodes the Buf Schema Registry commit timestamp (`v1.
 
 ## Resource Coverage
 
-GithubProfile, EgressPolicy, BuildkiteQueue, RegistryDefaultPolicy, RegistryRepositoryPolicy, TenantGroup, RevokableToken, Blueprint, plus data sources getGithubProfiles, getTenantGroups, getBlueprints, getRegistryRepositories, getRegistryImages, getUsage, getVolumes, getGithubJobs. `getBuilds` is skipped because ListBuilds is server-streaming.
+GithubProfile, EgressPolicy, BuildkiteQueue, RegistryDefaultPolicy, RegistryRepositoryPolicy, TenantGroup, RevokableToken, Blueprint, plus data sources getGithubProfiles, getTenantGroups, getBlueprints, getRegistryRepositories, getRegistryImages, getUsage, getVolumes, getGithubJobs, plus the single lookups getRegistryImage and getGithubJob. `getBuilds` is skipped because ListBuilds is server-streaming.
 
 ## Backlog
 

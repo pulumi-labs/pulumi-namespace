@@ -166,17 +166,17 @@ func TestClient_CallSendsConnectJSONWithBearerAuth(t *testing.T) {
 }
 
 func TestParseAPIError_MapsConnectCodes(t *testing.T) {
-	e := parseAPIError("DescribeObject", 404, []byte(`{"code":"not_found","message":"gone"}`))
+	e := parseAPIError(computeService, "DescribeObject", 404, []byte(`{"code":"not_found","message":"gone"}`))
 	assert.True(t, e.IsNotFound())
 	assert.Contains(t, e.Error(), "gone")
 	assert.True(t, isNotFound(e))
 
-	e = parseAPIError("DescribeObject", 403, []byte(`{"code":"permission_denied","message":"nope"}`))
+	e = parseAPIError(computeService, "DescribeObject", 403, []byte(`{"code":"permission_denied","message":"nope"}`))
 	assert.False(t, e.IsNotFound())
 	assert.Contains(t, e.Error(), "permission_denied")
 
 	// A non-JSON body (a proxy error page) still yields a usable error.
-	e = parseAPIError("X", 502, []byte(`<html>bad gateway</html>`))
+	e = parseAPIError(computeService, "X", 502, []byte(`<html>bad gateway</html>`))
 	assert.False(t, e.IsNotFound())
 	assert.Contains(t, e.Error(), "502")
 
