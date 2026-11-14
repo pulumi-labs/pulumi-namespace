@@ -4,8 +4,8 @@
   "display_name": "Namespace Cloud",
   "exclude_platforms": [],
   "provider": "namespace",
-  "skill_commit": "17da976cca658dfab4425a727e49859c44e2bdc1",
+  "skill_commit": "b09931120ec7d905283082338584ca5e52b674bf",
   "source_repo": "pulumi/autoregistry",
-  "source_sha": "381ae46f72d86b90b042953e8c38b20789aa7650",
-  "source_version": "0.3.0"
+  "source_sha": "f8382524d408fd7681c0d67ea992f4362fb1f82e",
+  "source_version": "0.3.1"
 }
