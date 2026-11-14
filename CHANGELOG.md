@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-14
+
+### Security
+
+- Security: the Go SDK `go.mod` in the mirror now requires OpenTelemetry `sdk/log` v1.47.0 instead of v0.21.0, fixing GHSA-q7gw-24fr-5p69 (vulnerable >= 0.9.0, < 1.47.0) and clearing the pulumi-labs/pulumi-namespace Dependabot alert once released (fixes #1972). SDK generation change only. Not breaking.
+
+- Security: updated OpenTelemetry (`go.opentelemetry.io/otel`, `sdk`, `trace`, `metric`, `log` and the OTLP trace exporters) from 1.45.0 to 1.47.0, which fixes GHSA-q7gw-24fr-5p69 (CVE-2026-128085, `AttributeValueLengthLimit` bypass in opentelemetry-go, vulnerable 1.33.0 to 1.46.x). Clears the pulumi-labs/pulumi-namespace Dependabot alerts for it once released (part of #1966). Not breaking.
+
 ## [0.3.0] - 2026-11-13
 
 ### Added
