@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-15
+
+### Security
+
+- Security: updated `golang.org/x/crypto` to v0.59.0 (and its `golang.org/x` companions), clearing GO-2026-5932 (the unmaintained `x/crypto/openpgp` package) for scanners; the provider does not import `openpgp`. Not breaking.
+
 ## [0.3.1] - 2026-11-14
 
 ### Security
