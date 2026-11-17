@@ -1,5 +1,0 @@
-# Provider configuration: this example uses the default provider. Set namespace:token (secret), namespace:region with
-# `pulumi config set [--secret] <key> <value>`, or export NSC_TOKEN, NSC_REGION.
-name: namespace-ci-platform-csharp
-runtime: dotnet
-description: A CI platform on Namespace Cloud (runner profile, egress policy, token, registry policy) with Pulumi (C#)
