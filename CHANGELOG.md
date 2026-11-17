@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-17
+
+### Security
+
+- Security: updated indirect dependency `github.com/klauspost/compress` to v1.20.4, clearing GO-2026-6865. Dependency bump only; no schema or behaviour change.
+
 ## [0.3.2] - 2026-11-15
 
 ### Security
